@@ -1,6 +1,6 @@
 # Product specification
 
-Status: implemented and live-evaluated as of 2026-09-09. Offline verification and two distinct credentialed OpenRouter runs pass; public deployment and final submission remain pending.
+Status: implemented, live-evaluated, and publicly deployed as of 2026-09-09. Offline verification and two distinct credentialed OpenRouter runs pass; human play review and final video submission remain pending.
 
 ## 1. Objective and competition strategy
 

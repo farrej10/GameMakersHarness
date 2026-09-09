@@ -41,7 +41,7 @@ The reference verifier passed contracts, protected-file checks, repository and s
 | G2 Live OpenRouter generation | Passed | `evidence/live-greenhouse/`, `evidence/live-moon/` |
 | G3 Controls and bounded recovery | Passed in tests | `tests/integration/orchestrator.test.ts` |
 | G4 Genuine autonomous repair evidence | Passed for toolkit implementation | Implementation repair entry above |
-| G5 Two live examples, export, reproduction, public link | Partial | Two verified live examples and `release/` exports pass; human full-level checks and public URL pending |
+| G5 Two live examples, export, reproduction, public link | Partial | Two verified live examples, clean reproduction, repository, and public Pages URL pass; human full-level checks pending |
 | G6 Submission and video | Pending | `docs/DEMO.md` remains the recording/submission checklist |
 
 Live model output and passing verification are recorded. Public deployment, human full-level completion, final video, and submission are not yet claimed.

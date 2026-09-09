@@ -33,8 +33,8 @@ If the optional UI is absent, use the CLI for prompt/approval and the static HTM
 
 - [x] Clear project name.
 - [x] One-to-two sentence product description.
-- [ ] Public accessible playable browser example.
-- [ ] GitHub repository containing implementation and lockfile.
+- [x] Public accessible playable browser example: <https://farrej10.github.io/GameMakersHarness/>.
+- [x] GitHub repository containing implementation and lockfile: <https://github.com/farrej10/GameMakersHarness>.
 - [x] `docs/SPEC.md` updated to reflect final shipped behavior.
 - [x] `docs/SYSTEM.md` with actual context boundaries and parallelization evidence.
 - [x] Actual harness scripts and tests, with reproduction commands.

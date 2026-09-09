@@ -21,6 +21,7 @@
     "game:serve": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/serve.ts",
     "verify": "node --import ./scripts/node-user-shim.mjs --import tsx scripts/verify.ts",
     "doctor": "node --import ./scripts/node-user-shim.mjs --import tsx scripts/doctor.ts",
+    "check:public": "node scripts/check-public.mjs",
     "game:spec": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts spec",
     "game:approve": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts approve",
     "game:generate": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts generate",

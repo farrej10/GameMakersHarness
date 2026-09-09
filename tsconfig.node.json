@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2024",
+    "types": ["node"]
+  },
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "playwright.negative.config.ts",
+    "scripts/**/*.ts",
+    "src/contracts/**/*.ts",
+    "src/runtime/**/*.ts",
+    "src/toolkit/**/*.ts",
+    "tests/unit/**/*.ts",
+    "tests/integration/**/*.ts",
+    "tests/browser/**/*.ts"
+  ],
+  "exclude": ["src/runtime/input.ts"]
+}

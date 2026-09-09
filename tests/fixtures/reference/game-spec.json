@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "title": "Greenhouse Rescue",
+  "description": "Collect the batteries and return to the charging dock.",
+  "seed": 42,
+  "theme": {
+    "playerName": "Maintenance robot",
+    "collectibleName": "Battery",
+    "enemyName": "Rogue sprinkler",
+    "exitName": "Charging dock",
+    "palette": ["#14231D", "#376B4B", "#88C070", "#F2C14E"]
+  },
+  "arena": { "width": 800, "height": 600 },
+  "player": { "speed": 180, "health": 3 },
+  "collectibles": { "count": 6 },
+  "enemies": { "count": 2, "speed": 60, "behavior": "chase" },
+  "objective": { "mode": "collect-then-exit" },
+  "adaptations": []
+}

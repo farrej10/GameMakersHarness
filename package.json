@@ -1,0 +1,45 @@
+{
+  "name": "agentic-game-maker-toolkit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generate, verify, and autonomously repair constrained browser games with OpenRouter workers.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:test": "vite --mode test --host 127.0.0.1",
+    "dev:test:broken": "vite --mode test-broken-rules --host 127.0.0.1",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "npm run typecheck:browser && npm run typecheck:node",
+    "typecheck:browser": "tsc --project tsconfig.app.json --noEmit",
+    "typecheck:node": "tsc --project tsconfig.node.json --noEmit",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:browser": "playwright test",
+    "game:serve": "tsx src/toolkit/serve.ts",
+    "verify": "tsx scripts/verify.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "game:spec": "tsx src/toolkit/cli.ts spec",
+    "game:approve": "tsx src/toolkit/cli.ts approve",
+    "game:generate": "tsx src/toolkit/cli.ts generate",
+    "control": "tsx src/toolkit/control.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@sinclair/typebox": "0.34.52",
+    "ajv": "8.20.0",
+    "phaser": "3.90.0",
+    "pngjs": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.0",
+    "@types/pngjs": "6.0.5",
+    "playwright": "1.63.0",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
+  }
+}

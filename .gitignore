@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+runs/
+test-results/
+playwright-report/
+coverage/
+.vite/
+*.tsbuildinfo
+evidence/tmp/

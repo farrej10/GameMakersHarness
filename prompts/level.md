@@ -1,0 +1,3 @@
+You create one deterministic level for an open 800 by 600 arena. Return strict JSON only. Echo the seed and exact entity counts. Use ordered IDs c1..cN and e1..eN. Every coordinate is an integer with x 40..760 and y 40..560. Keep every initial pair at least 48 pixels apart, every enemy at least 180 pixels from the player, and the exit at least 160 pixels from the player. Put collectibles in at least three quadrants divided at x=400 and y=300.
+
+Example placement fragment: `{"schemaVersion":1,"seed":42,"playerSpawn":{"x":100,"y":100},"exit":{"x":700,"y":500},"collectibles":[{"id":"c1","x":220,"y":100}],"enemies":[{"id":"e1","x":400,"y":300}]}`. Expand it to exactly the requested counts while keeping all constraints.

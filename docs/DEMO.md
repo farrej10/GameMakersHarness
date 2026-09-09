@@ -25,7 +25,7 @@ Use clearly labeled time compression or recorded runs where generation exceeds t
 6. Show the report worker timeline, request/model metadata, initial failed check, before/after diff, passing rerun, and three-repair cap test.
 7. End on `npm.cmd run verify`, the public playable URL, and the repository URL.
 
-Do not record steps 2 through 6 as live evidence until the two credentialed runs exist. The current fixture screenshots under `evidence/screenshots/` may be shown only with a persistent `REFERENCE FIXTURE` label.
+The two credentialed runs now exist under `evidence/live-greenhouse/` and `evidence/live-moon/`; their reports and screenshots may be shown as live evidence. Screenshots under `evidence/screenshots/` remain reference fixtures and require a persistent `REFERENCE FIXTURE` label.
 
 If the optional UI is absent, use the CLI for prompt/approval and the static HTML report for orchestration/repair evidence. Do not sacrifice the working harness to build a dashboard for the video.
 
@@ -48,4 +48,4 @@ If the optional UI is absent, use the CLI for prompt/approval and the static HTM
 
 Agentic Game Maker turns a short supported description into a playable browser survival game using specialized OpenRouter workers. Its harness tests gameplay, routes failures back to the responsible worker, and records bounded autonomous repairs in an inspectable execution report.
 
-This description matches the implemented toolkit. Submission still requires credentialed live runs, a public URL, repository publication, and the recorded video.
+This description matches the implemented and credentialed toolkit. Submission still requires human full-level playthroughs, a public URL, repository publication, and the recorded video.

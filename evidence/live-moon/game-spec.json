@@ -1,0 +1,38 @@
+{
+  "adaptations": [],
+  "arena": {
+    "height": 600,
+    "width": 800
+  },
+  "collectibles": {
+    "count": 3
+  },
+  "description": "An astronaut gathers three oxygen canisters on a moon base while avoiding patrolling repair drones. Collecting every canister wins.",
+  "enemies": {
+    "behavior": "horizontal-patrol",
+    "count": 1,
+    "speed": 60
+  },
+  "objective": {
+    "mode": "collect-all"
+  },
+  "player": {
+    "health": 3,
+    "speed": 180
+  },
+  "schemaVersion": 1,
+  "seed": 42,
+  "theme": {
+    "collectibleName": "Oxygen Canister",
+    "enemyName": "Repair Drone",
+    "exitName": "Base Exit",
+    "palette": [
+      "#1A1A2E",
+      "#3E3E5C",
+      "#5C5C8A",
+      "#8A8AB9"
+    ],
+    "playerName": "Astronaut"
+  },
+  "title": "Moon Base Rescue"
+}

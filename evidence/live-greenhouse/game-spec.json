@@ -1,0 +1,38 @@
+{
+  "adaptations": [],
+  "arena": {
+    "height": 600,
+    "width": 800
+  },
+  "collectibles": {
+    "count": 6
+  },
+  "description": "A maintenance robot must collect six batteries in an overgrown greenhouse while rogue sprinklers chase it, then return to its charging dock.",
+  "enemies": {
+    "behavior": "chase",
+    "count": 2,
+    "speed": 60
+  },
+  "objective": {
+    "mode": "collect-then-exit"
+  },
+  "player": {
+    "health": 3,
+    "speed": 180
+  },
+  "schemaVersion": 1,
+  "seed": 42,
+  "theme": {
+    "collectibleName": "Battery",
+    "enemyName": "Rogue Sprinkler",
+    "exitName": "Charging Dock",
+    "palette": [
+      "#1A2B3C",
+      "#4D5E6F",
+      "#7A8B9C",
+      "#ADBEEF"
+    ],
+    "playerName": "Maintenance Robot"
+  },
+  "title": "Greenhouse Maintenance"
+}

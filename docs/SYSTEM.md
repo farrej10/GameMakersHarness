@@ -1,6 +1,6 @@
 # Agentic system design
 
-Status: core system implemented as of 2026-09-09. The diagram describes the shipped flow; fixture evidence for overlap and recovery is linked below. Live OpenRouter evidence remains pending.
+Status: implemented and live-evaluated as of 2026-09-09. The diagram describes the shipped flow; fixture and credentialed evidence for overlap and recovery are linked below.
 
 ## 1. System map
 
@@ -220,4 +220,4 @@ gantt
 
 The injected-fault repair test supplies a source-valid but behaviorally incorrect logic module. Attempt 0 reports a logic-owned policy failure. The repair worker returns a complete replacement; the orchestrator saves before, after, and diff artifacts, reintegrates, and attempt 1 passes. No human callback exists in this path. A second test rejects three replacements and asserts exactly three repair calls.
 
-Reference verification evidence is curated under `evidence/reference/`. Live OpenRouter timings, returned model/provider IDs, token use, reported cost, and any live repair will be added only after a credentialed run is performed.
+Reference verification evidence is curated under `evidence/reference/`. Credentialed timings, returned model/provider IDs, token use, reported cost, worker overlap, and screenshots are curated under `evidence/live-greenhouse/`, `evidence/live-moon/`, and `evidence/LIVE-RUNS.md`. The observed live harness failure and its preserved pre-fix evidence are under `evidence/live-recovery/`.

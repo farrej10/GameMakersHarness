@@ -2,7 +2,7 @@
 
 Agentic Game Maker converts a short, supported description into a playable top-down collection/survival game. Specialized OpenRouter workers produce a specification, rules, level, and pixel art; trusted code validates and integrates those artifacts, runs browser gameplay tests, and performs at most three owner-routed repair attempts without another human prompt.
 
-The deterministic runtime, offline reference game, validation harness, orchestrator, repair loop, reports, CLI, and optional local control page are implemented. Live OpenRouter evidence and public deployment remain release gates because this workspace does not contain an API key or hosting configuration.
+The deterministic runtime, validation harness, orchestrator, repair loop, reports, CLI, and local control page are implemented. Two distinct live OpenRouter games pass the complete harness and are exported under `release/`; repository publication, public deployment, human full-level playthroughs, and the final video remain release gates.
 
 ## Requirements
 
@@ -97,4 +97,6 @@ Open `http://127.0.0.1:4300`. The page supports description entry, spec review, 
 - Offline reference verification passes.
 - Unit and integration tests demonstrate overlapping worker calls, fixed-path integration, approval invalidation, art fallback, protected-file detection, and a bounded autonomous logic repair.
 - A real implementation failure and repair is recorded in `docs/AI-DEV-LOG.md`.
-- Live OpenRouter runs, two manually completed generated games, a public playable URL, repository publication, and the final video remain pending.
+- Live OpenRouter runs `20260909T173352Z-9f60806e` and `20260909T173519Z-7e7412f3` pass every verification stage; curated artifacts are under `evidence/live-greenhouse/` and `evidence/live-moon/`.
+- `release/` contains a static two-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
+- Human full-level playthroughs, a public URL, GitHub publication, and the final three-minute video remain pending.

@@ -210,7 +210,7 @@ export async function generateRun(options: {
           type: 'worker.failed',
           role,
           attempt: 0,
-          data: { requestId: `${role}_0`, code: 'WORKER_FAILED', message: error.message },
+          data: { requestId: `${role}_0`, code: 'WORKER_FAILED', message: boundedMessage(error) },
         });
       } else {
         recordWorkerResult(runRoot, role, entry.value);
@@ -225,7 +225,7 @@ export async function generateRun(options: {
         events.append({
           type: 'worker.completed',
           role,
-          attempt: entry.value.requests.length - 1,
+          attempt: Math.max(0, entry.value.requests.length - 1),
           data: {
             requestId: entry.value.requests.at(-1)?.request.requestId ?? `${role}_0`,
             artifactPath: `workers/${role}/attempt-${Math.max(0, entry.value.requests.length - 1)}/output.json`,
@@ -247,7 +247,7 @@ export async function generateRun(options: {
         type: 'art.fallback',
         role: 'art',
         attempt: null,
-        data: { reason: art.fallbackReason ?? 'Generated art was unavailable.' },
+        data: { reason: boundedMessage(art.fallbackReason ?? 'Generated art was unavailable.', 1_000) },
       });
     }
     transitionRun(status, 'integrating');
@@ -463,7 +463,7 @@ export async function generateRun(options: {
       status.reasonCode = error instanceof Error && 'code' in error
         ? String(error.code)
         : 'GENERATION_FAILED';
-      status.message = error instanceof Error ? error.message : String(error);
+      status.message = boundedMessage(error);
       status.activeElapsedMs += Math.round(performance.now() - started);
       writeRunStatus(runRoot, status);
       events.append({
@@ -479,4 +479,8 @@ export async function generateRun(options: {
     if (lock !== undefined) closeSync(lock);
     if (existsSync(lockPath)) unlinkSync(lockPath);
   }
+}
+function boundedMessage(value: unknown, maximum = 2_000): string {
+  const message = value instanceof Error ? value.message : String(value);
+  return (message.trim() || 'Unknown failure.').slice(0, maximum);
 }

@@ -18,13 +18,13 @@
     "typecheck:node": "tsc --project tsconfig.node.json --noEmit",
     "test:unit": "vitest run --passWithNoTests",
     "test:browser": "playwright test",
-    "game:serve": "tsx src/toolkit/serve.ts",
-    "verify": "tsx scripts/verify.ts",
-    "doctor": "tsx scripts/doctor.ts",
-    "game:spec": "tsx src/toolkit/cli.ts spec",
-    "game:approve": "tsx src/toolkit/cli.ts approve",
-    "game:generate": "tsx src/toolkit/cli.ts generate",
-    "control": "tsx src/toolkit/control.ts"
+    "game:serve": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/serve.ts",
+    "verify": "node --import ./scripts/node-user-shim.mjs --import tsx scripts/verify.ts",
+    "doctor": "node --import ./scripts/node-user-shim.mjs --import tsx scripts/doctor.ts",
+    "game:spec": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts spec",
+    "game:approve": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts approve",
+    "game:generate": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/cli.ts generate",
+    "control": "node --import ./scripts/node-user-shim.mjs --import tsx src/toolkit/control.ts"
   },
   "license": "MIT",
   "dependencies": {

@@ -1,6 +1,6 @@
 # Implementation task cards
 
-Status: all tasks below are TODO. No software implementation is included in this planning change.
+Status: T00 through T14 and T16 are complete as of 2026-09-09. T15 is locally prepared; public GitHub/Pages URLs, human full-level completion, and video submission require external action.
 
 Use these cards with less capable implementation models. Assign one card at a time. A task is complete only when its stated checks actually pass and the handoff records the commands/results. If a card is too large for one context, finish one numbered step and hand off explicit remaining work; do not claim the entire card passed.
 

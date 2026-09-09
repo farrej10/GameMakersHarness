@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { loadToolkitConfig, publicConfig } from '../../src/toolkit/config';
 import {
   ModelError,
@@ -97,6 +100,7 @@ describe('OpenRouter client', () => {
         model: request.model,
         stream: false,
         max_tokens: 100,
+        reasoning: { effort: 'low', exclude: true },
         provider: { require_parameters: true },
         response_format: expect.objectContaining({ type: 'json_schema' }),
       }),
@@ -135,6 +139,37 @@ describe('OpenRouter client', () => {
     expect(delays).toEqual([1_000, 3_000]);
     expect(notices).toEqual([1, 2]);
     expect(budget.count).toBe(3);
+  });
+
+  it('retries empty and truncated successful completions with a larger output budget', async () => {
+    const sentBudgets: number[] = [];
+    const transport = vi.fn(async (_input: string | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { max_tokens: number };
+      sentBudgets.push(body.max_tokens);
+      if (sentBudgets.length === 1) {
+        return Response.json({ choices: [{ finish_reason: 'stop', message: { content: '' } }] });
+      }
+      if (sentBudgets.length === 2) {
+        return Response.json({ choices: [{ finish_reason: 'length', message: { content: '{}' } }] });
+      }
+      return success();
+    });
+    const { instance } = client({ fetch: transport, delay: async () => undefined });
+
+    await expect(instance.generate(request, new AbortController().signal)).resolves.toMatchObject({
+      content: { ok: true },
+    });
+    expect(sentBudgets).toEqual([100, 2_148, 4_196]);
+  });
+
+  it('accepts one fenced structured JSON object from a lower-cost model', async () => {
+    const { instance } = client({
+      fetch: async () => success('```json\n{"ok":true}\n```'),
+    });
+
+    await expect(instance.generate(request, new AbortController().signal)).resolves.toMatchObject({
+      content: { ok: true },
+    });
   });
 
   it('honors a longer Retry-After value', async () => {
@@ -213,7 +248,7 @@ describe('OpenRouter client', () => {
     ],
     ['schema-invalid content', success('{"ok":"yes"}'), 'SCHEMA_VALIDATION'],
   ])('rejects %s', async (_label, response, code) => {
-    const { instance } = client({ fetch: async () => response });
+    const { instance } = client({ fetch: async () => response.clone(), delay: async () => undefined });
     expect(await errorCode(instance.generate(request, new AbortController().signal))).toBe(code);
   });
 
@@ -303,5 +338,21 @@ describe('OpenRouter configuration', () => {
     expect(() =>
       loadToolkitConfig({ env: { OPENROUTER_API_KEY: 'secret' }, cwd: 'Z:/missing' }),
     ).toThrow(/Configure OPENROUTER_MODEL/u);
+  });
+
+  it('keeps .env values when inherited variables are empty', () => {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'game-maker-config-'));
+    writeFileSync(
+      path.join(cwd, '.env'),
+      'OPENROUTER_API_KEY=from-file\nOPENROUTER_MODEL=file-model\n',
+    );
+
+    const config = loadToolkitConfig({
+      cwd,
+      env: { OPENROUTER_API_KEY: '', OPENROUTER_MODEL: '' },
+    });
+
+    expect(config.apiKey).toBe('from-file');
+    expect(config.models.spec).toBe('file-model');
   });
 });

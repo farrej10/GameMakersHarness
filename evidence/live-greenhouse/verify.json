@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "runId": "reference",
+  "runId": "20260909T173352Z-9f60806e",
   "attempt": 0,
-  "startedAt": "2026-09-09T17:45:09.685Z",
-  "finishedAt": "2026-09-09T17:45:31.092Z",
+  "startedAt": "2026-09-09T17:34:34.222Z",
+  "finishedAt": "2026-09-09T17:34:55.527Z",
   "status": "passed",
   "checks": [
     {
@@ -24,7 +24,9 @@
       "message": "Protected files match the trusted baseline.",
       "expected": "no added, changed, or deleted protected files",
       "actual": null,
-      "artifactPaths": []
+      "artifactPaths": [
+        "evidence/protected-baseline.json"
+      ]
     },
     {
       "id": "TYPE-REPOSITORY",
@@ -35,7 +37,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/type-repository.txt"
+        "evidence/attempt-0/logs/type-repository.txt"
       ]
     },
     {
@@ -47,7 +49,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/type-generated.txt"
+        "evidence/attempt-0/logs/type-generated.txt"
       ]
     },
     {
@@ -59,7 +61,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/unit-suite.txt"
+        "evidence/attempt-0/logs/unit-suite.txt"
       ]
     },
     {
@@ -71,7 +73,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/build-test.txt"
+        "evidence/attempt-0/logs/build-test.txt"
       ]
     },
     {
@@ -83,7 +85,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/build-production.txt"
+        "evidence/attempt-0/logs/build-production.txt"
       ]
     },
     {
@@ -107,7 +109,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/browser-suite.txt"
+        "evidence/attempt-0/logs/browser-suite.txt"
       ]
     },
     {
@@ -119,7 +121,7 @@
       "expected": "exit code 0 before timeout",
       "actual": "exit code 0",
       "artifactPaths": [
-        "logs/prod-01.txt"
+        "evidence/attempt-0/logs/prod-01.txt"
       ]
     },
     {

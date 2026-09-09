@@ -1,0 +1,273 @@
+{
+  "approvalHash": "28743fa312a419d9aee252170bbd0285f1ec7f99d2861542771eb8748ec546a1",
+  "artSource": "generated",
+  "playableBuild": "build/index.html",
+  "prompt": "An astronaut gathers three oxygen canisters on a moon base while avoiding patrolling repair drones. Collecting every canister wins.\n",
+  "provenance": "live",
+  "repairEvidence": [],
+  "reportedCostUsd": 0.00024107000000000002,
+  "requestCount": 4,
+  "requests": [
+    {
+      "completionTokens": 452,
+      "contextSha256": "0c21d15cf9c4127ed764f77315b9bbebb8f555a46983de77aaf3e33b85091254",
+      "elapsedMs": 13662,
+      "promptTokens": 640,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00008636,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "art_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "art"
+    },
+    {
+      "completionTokens": 280,
+      "contextSha256": "dca0c1d78cbb75af1540e15303798cd9b9ffeb029376c4fc63567ee855e8bb67",
+      "elapsedMs": 19808,
+      "promptTokens": 853,
+      "provider": "Darkbloom",
+      "reportedCostUsd": 0.00004506,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "level_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "level"
+    },
+    {
+      "completionTokens": 301,
+      "contextSha256": "03778cf16600e3d2b64dc37516c35928bcab128d006eb5ee4792365461f2e310",
+      "elapsedMs": 6695,
+      "promptTokens": 616,
+      "provider": "CoreWeave",
+      "reportedCostUsd": 0.00005761,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "logic_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "logic"
+    },
+    {
+      "completionTokens": 316,
+      "contextSha256": null,
+      "elapsedMs": 10716,
+      "promptTokens": 1022,
+      "provider": "Darkbloom",
+      "reportedCostUsd": 0.00005204,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "spec_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "spec"
+    }
+  ],
+  "runId": "20260909T173519Z-7e7412f3",
+  "schemaVersion": 1,
+  "spec": {
+    "adaptations": [],
+    "arena": {
+      "height": 600,
+      "width": 800
+    },
+    "collectibles": {
+      "count": 3
+    },
+    "description": "An astronaut gathers three oxygen canisters on a moon base while avoiding patrolling repair drones. Collecting every canister wins.",
+    "enemies": {
+      "behavior": "horizontal-patrol",
+      "count": 1,
+      "speed": 60
+    },
+    "objective": {
+      "mode": "collect-all"
+    },
+    "player": {
+      "health": 3,
+      "speed": 180
+    },
+    "schemaVersion": 1,
+    "seed": 42,
+    "theme": {
+      "collectibleName": "Oxygen Canister",
+      "enemyName": "Repair Drone",
+      "exitName": "Base Exit",
+      "palette": [
+        "#1A1A2E",
+        "#3E3E5C",
+        "#5C5C8A",
+        "#8A8AB9"
+      ],
+      "playerName": "Astronaut"
+    },
+    "title": "Moon Base Rescue"
+  },
+  "status": {
+    "activeElapsedMs": 51940,
+    "message": null,
+    "reasonCode": null,
+    "requestCount": 4,
+    "runId": "20260909T173519Z-7e7412f3",
+    "schemaVersion": 1,
+    "state": "verified"
+  },
+  "verification": {
+    "attempt": 0,
+    "checks": [
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no contract or semantic failures",
+        "id": "CONTRACTS",
+        "message": "Selected spec, level, art, and logic satisfy their contracts.",
+        "owner": "harness",
+        "stage": "contracts",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "evidence/protected-baseline.json"
+        ],
+        "expected": "no added, changed, or deleted protected files",
+        "id": "PROTECT-01",
+        "message": "Protected files match the trusted baseline.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/type-repository.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-REPOSITORY",
+        "message": "TYPE-REPOSITORY completed successfully.",
+        "owner": "harness",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/type-generated.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-GENERATED",
+        "message": "TYPE-GENERATED completed successfully.",
+        "owner": "logic",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/unit-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "UNIT-SUITE",
+        "message": "UNIT-SUITE completed successfully.",
+        "owner": "harness",
+        "stage": "unit",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/build-test.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-TEST",
+        "message": "BUILD-TEST completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/build-production.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-PRODUCTION",
+        "message": "BUILD-PRODUCTION completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "build"
+        ],
+        "expected": "four valid production PNG assets",
+        "id": "ASSET-01",
+        "message": "All manifest assets decode as visible 32 by 32 PNGs.",
+        "owner": "art",
+        "stage": "assets",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/browser-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BROWSER-SUITE",
+        "message": "BROWSER-SUITE completed successfully.",
+        "owner": "runtime",
+        "stage": "browser",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/prod-01.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "PROD-01",
+        "message": "PROD-01 completed successfully.",
+        "owner": "harness",
+        "stage": "production",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no changes during verification",
+        "id": "PROTECT-POST",
+        "message": "Verification left protected files unchanged.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      }
+    ],
+    "finishedAt": "2026-09-09T17:36:33.628Z",
+    "runId": "20260909T173519Z-7e7412f3",
+    "schemaVersion": 1,
+    "startedAt": "2026-09-09T17:36:12.382Z",
+    "status": "passed"
+  },
+  "workerIntervals": [
+    {
+      "finishedAt": "2026-09-09T17:35:30.681Z",
+      "role": "spec",
+      "startedAt": "2026-09-09T17:35:19.951Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:36:12.292Z",
+      "role": "logic",
+      "startedAt": "2026-09-09T17:35:52.445Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:36:12.294Z",
+      "role": "level",
+      "startedAt": "2026-09-09T17:35:52.454Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:36:12.296Z",
+      "role": "art",
+      "startedAt": "2026-09-09T17:35:52.454Z",
+      "status": "completed"
+    }
+  ]
+}

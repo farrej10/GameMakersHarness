@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="A generated top-down collection game" />
+    <title>Agentic Game Maker Toolkit</title>
+    <script type="module" crossorigin src="./assets/index-CHYmbc_0.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BwWx5xhK.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel" aria-label="Game information">
+        <h1 data-testid="game-title">Loading game…</h1>
+        <p class="objective" data-testid="game-objective"></p>
+        <div class="stats">
+          <strong data-testid="game-score">Score: 0/0</strong>
+          <strong data-testid="game-health">Health: 0/0</strong>
+        </div>
+        <div class="state" data-testid="game-state">LOADING</div>
+        <div class="actions">
+          <button type="button" data-testid="start-button">Start</button>
+          <button type="button" data-testid="restart-button" disabled>Restart</button>
+        </div>
+        <p class="controls">Move with WASD or arrow keys. Press Enter to start and R to restart.</p>
+        <p class="error" data-testid="game-error" role="alert" hidden></p>
+      </section>
+      <section class="game-shell" aria-label="Game arena">
+        <div id="game"></div>
+        <div class="overlay" data-testid="game-overlay" aria-live="polite"></div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,4 +1,6 @@
 import { expect, test, type Page, type TestInfo } from 'playwright/test';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import type {
   GameDebug,
   GameSnapshot,
@@ -10,6 +12,13 @@ type DebugGlobal = typeof globalThis & { gameDebug: GameDebug };
 type PolicyGlobal = typeof globalThis & {
   ruleTestApi: RuleFunctions;
 };
+
+const expectedSpec = JSON.parse(
+  readFileSync(
+    process.env.GAME_SPEC_PATH || path.resolve('tests/fixtures/reference/game-spec.json'),
+    'utf8',
+  ),
+) as { title: string; collectibles: { count: number }; player: { health: number } };
 
 async function openTestGame(page: Page): Promise<void> {
   await page.goto('/?clock=manual');
@@ -73,9 +82,9 @@ test('PLAY-01 actual generated game loads with its HUD', async ({ page }, testIn
   page.on('requestfailed', (request) => failedRequests.push(request.url()));
 
   await openTestGame(page);
-  await expect(page.getByTestId('game-title')).toHaveText('Greenhouse Rescue');
-  await expect(page.getByTestId('game-score')).toHaveText('Score: 0/6');
-  await expect(page.getByTestId('game-health')).toHaveText('Health: 3/3');
+  await expect(page.getByTestId('game-title')).toHaveText(expectedSpec.title);
+  await expect(page.getByTestId('game-score')).toHaveText(`Score: 0/${expectedSpec.collectibles.count}`);
+  await expect(page.getByTestId('game-health')).toHaveText(`Health: ${expectedSpec.player.health}/${expectedSpec.player.health}`);
   await expect(page.getByTestId('game-state')).toHaveText('READY');
   await expect(page.getByText(/Move with WASD or arrow keys/)).toBeVisible();
   await capture(page, testInfo, 'generated-start');

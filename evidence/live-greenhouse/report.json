@@ -1,0 +1,273 @@
+{
+  "approvalHash": "91dbb7f86ffb63509dd00d9f019130f790880f846867d6a79b6016e82348bf86",
+  "artSource": "generated",
+  "playableBuild": "build/index.html",
+  "prompt": "A maintenance robot must collect six batteries in an overgrown greenhouse while rogue sprinklers chase it, then return to its charging dock.\n",
+  "provenance": "live",
+  "repairEvidence": [],
+  "reportedCostUsd": 0.00036470999999999997,
+  "requestCount": 5,
+  "requests": [
+    {
+      "completionTokens": 396,
+      "contextSha256": "bfd4abd16e7d19c050273dd753e4b2bacfd0410dccc06109ba529422bf67ec00",
+      "elapsedMs": 3821,
+      "promptTokens": 637,
+      "provider": "Phala",
+      "reportedCostUsd": 0.00008488,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "art_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "art"
+    },
+    {
+      "completionTokens": 964,
+      "contextSha256": "8a3952419ba7f49086e710dd15e89104417b9c749321fbb6b416be56abdbd3c4",
+      "elapsedMs": 10488,
+      "promptTokens": 452,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00015752,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "level_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "level"
+    },
+    {
+      "completionTokens": 310,
+      "contextSha256": "6a9aae1f46ab3d5a918f06e2e66ced1182999f33316ce0ef92858dfde8513ad6",
+      "elapsedMs": 19094,
+      "promptTokens": 622,
+      "provider": "Novita",
+      "reportedCostUsd": 0.00007138,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "logic_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "logic"
+    },
+    {
+      "completionTokens": 259,
+      "contextSha256": null,
+      "elapsedMs": 2744,
+      "promptTokens": 424,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00005093,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "spec_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "spec"
+    }
+  ],
+  "runId": "20260909T173352Z-9f60806e",
+  "schemaVersion": 1,
+  "spec": {
+    "adaptations": [],
+    "arena": {
+      "height": 600,
+      "width": 800
+    },
+    "collectibles": {
+      "count": 6
+    },
+    "description": "A maintenance robot must collect six batteries in an overgrown greenhouse while rogue sprinklers chase it, then return to its charging dock.",
+    "enemies": {
+      "behavior": "chase",
+      "count": 2,
+      "speed": 60
+    },
+    "objective": {
+      "mode": "collect-then-exit"
+    },
+    "player": {
+      "health": 3,
+      "speed": 180
+    },
+    "schemaVersion": 1,
+    "seed": 42,
+    "theme": {
+      "collectibleName": "Battery",
+      "enemyName": "Rogue Sprinkler",
+      "exitName": "Charging Dock",
+      "palette": [
+        "#1A2B3C",
+        "#4D5E6F",
+        "#7A8B9C",
+        "#ADBEEF"
+      ],
+      "playerName": "Maintenance Robot"
+    },
+    "title": "Greenhouse Maintenance"
+  },
+  "status": {
+    "activeElapsedMs": 43353,
+    "message": null,
+    "reasonCode": null,
+    "requestCount": 5,
+    "runId": "20260909T173352Z-9f60806e",
+    "schemaVersion": 1,
+    "state": "verified"
+  },
+  "verification": {
+    "attempt": 0,
+    "checks": [
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no contract or semantic failures",
+        "id": "CONTRACTS",
+        "message": "Selected spec, level, art, and logic satisfy their contracts.",
+        "owner": "harness",
+        "stage": "contracts",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "evidence/protected-baseline.json"
+        ],
+        "expected": "no added, changed, or deleted protected files",
+        "id": "PROTECT-01",
+        "message": "Protected files match the trusted baseline.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/type-repository.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-REPOSITORY",
+        "message": "TYPE-REPOSITORY completed successfully.",
+        "owner": "harness",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/type-generated.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-GENERATED",
+        "message": "TYPE-GENERATED completed successfully.",
+        "owner": "logic",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/unit-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "UNIT-SUITE",
+        "message": "UNIT-SUITE completed successfully.",
+        "owner": "harness",
+        "stage": "unit",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/build-test.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-TEST",
+        "message": "BUILD-TEST completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/build-production.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-PRODUCTION",
+        "message": "BUILD-PRODUCTION completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "build"
+        ],
+        "expected": "four valid production PNG assets",
+        "id": "ASSET-01",
+        "message": "All manifest assets decode as visible 32 by 32 PNGs.",
+        "owner": "art",
+        "stage": "assets",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/browser-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BROWSER-SUITE",
+        "message": "BROWSER-SUITE completed successfully.",
+        "owner": "runtime",
+        "stage": "browser",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-0/logs/prod-01.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "PROD-01",
+        "message": "PROD-01 completed successfully.",
+        "owner": "harness",
+        "stage": "production",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no changes during verification",
+        "id": "PROTECT-POST",
+        "message": "Verification left protected files unchanged.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      }
+    ],
+    "finishedAt": "2026-09-09T17:34:55.527Z",
+    "runId": "20260909T173352Z-9f60806e",
+    "schemaVersion": 1,
+    "startedAt": "2026-09-09T17:34:34.222Z",
+    "status": "passed"
+  },
+  "workerIntervals": [
+    {
+      "finishedAt": "2026-09-09T17:33:54.839Z",
+      "role": "spec",
+      "startedAt": "2026-09-09T17:33:52.081Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:34:34.132Z",
+      "role": "logic",
+      "startedAt": "2026-09-09T17:34:14.961Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:34:34.134Z",
+      "role": "level",
+      "startedAt": "2026-09-09T17:34:14.969Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-09T17:34:34.136Z",
+      "role": "art",
+      "startedAt": "2026-09-09T17:34:14.969Z",
+      "status": "completed"
+    }
+  ]
+}

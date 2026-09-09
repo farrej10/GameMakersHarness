@@ -267,7 +267,10 @@ function classifyBrowserFailure(output: string): { id: string; owner: CheckResul
     (output.includes('POLICY-GUARD') ? 'POLICY-GUARD' : 'BROWSER-SUITE');
   if (id.startsWith('POLICY') || id === 'PLAY-07') return { id, owner: 'logic' };
   if (id.startsWith('LEVEL')) return { id, owner: 'level' };
-  if (/asset|png|404/iu.test(output)) return { id, owner: 'art' };
+  if (id === 'PLAY-01') return { id, owner: 'runtime' };
+  if (/(?:failed request|404).*(?:asset|png)|(?:asset|png).*(?:failed request|404)/iu.test(output)) {
+    return { id, owner: 'art' };
+  }
   return { id, owner: id.startsWith('PROD') ? 'harness' : 'runtime' };
 }
 
@@ -508,6 +511,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
   const playwrightEnvironment = {
     GAME_TEST_BUILD: testBuild,
     GAME_PRODUCTION_BUILD: productionBuild,
+    GAME_SPEC_PATH: selected.specPath,
   };
   const browser = await addCommandCheck('BROWSER-SUITE', 'browser', 'runtime', 'npm.cmd', [
     'exec',

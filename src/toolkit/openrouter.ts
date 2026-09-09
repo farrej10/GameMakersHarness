@@ -126,6 +126,25 @@ function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function parseStructuredContent(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const unfenced = text
+      .replace(/^\s*```(?:json)?\s*/iu, '')
+      .replace(/\s*```\s*$/u, '')
+      .trim();
+    try {
+      return JSON.parse(unfenced);
+    } catch {
+      const start = unfenced.indexOf('{');
+      const end = unfenced.lastIndexOf('}');
+      if (start >= 0 && end > start) return JSON.parse(unfenced.slice(start, end + 1));
+      throw new ModelError('MALFORMED_CONTENT', 'Completion content is not valid JSON.');
+    }
+  }
+}
+
 function errorFromResponse(status: number, body: unknown): ModelError {
   const record = typeof body === 'object' && body !== null ? body as Record<string, unknown> : {};
   const nested = typeof record.error === 'object' && record.error !== null
@@ -203,7 +222,8 @@ export class OpenRouterClient implements ModelClient {
                 { role: 'system', content: request.system },
                 { role: 'user', content: request.user },
               ],
-              max_tokens: request.maxOutputTokens,
+              max_tokens: request.maxOutputTokens + attempt * 2_048,
+              reasoning: { effort: 'low', exclude: true },
               provider: { require_parameters: true },
               response_format: {
                 type: 'json_schema',
@@ -268,21 +288,51 @@ export class OpenRouterClient implements ModelClient {
         const message = choice && typeof choice.message === 'object' && choice.message !== null
           ? choice.message as Record<string, unknown>
           : undefined;
-        if (!choice || !message) throw new ModelError('EMPTY_RESPONSE', 'OpenRouter returned no completion choice.');
-        if (choice.finish_reason === 'length' || choice.finish_reason === 'max_tokens') {
-          throw new ModelError('TRUNCATED_RESPONSE', 'OpenRouter truncated the completion.');
-        }
-        if (message.refusal || message.error) {
+        if (message?.refusal || message?.error) {
           throw new ModelError('REFUSED_RESPONSE', sanitize(message.refusal ?? message.error));
         }
-        if (typeof message.content !== 'string' || !message.content.trim()) {
-          throw new ModelError('EMPTY_RESPONSE', 'OpenRouter returned empty completion content.');
+        const completionProblem = !choice || !message
+          ? new ModelError('EMPTY_RESPONSE', 'OpenRouter returned no completion choice.')
+          : choice.finish_reason === 'length' || choice.finish_reason === 'max_tokens'
+            ? new ModelError('TRUNCATED_RESPONSE', 'OpenRouter truncated the completion.')
+            : typeof message.content !== 'string' || !message.content.trim()
+              ? new ModelError('EMPTY_RESPONSE', 'OpenRouter returned empty completion content.')
+              : null;
+        if (completionProblem) {
+          if (attempt < 2) {
+            const delayMs = attempt === 0 ? 1_000 : 3_000;
+            this.options.onRetry?.({
+              requestId: request.requestId,
+              retryNumber: attempt + 1,
+              reason: completionProblem.message,
+              delayMs,
+            });
+            await this.delay(delayMs, signal);
+            continue;
+          }
+          throw completionProblem;
         }
+        if (!choice || !message) throw new ModelError('EMPTY_RESPONSE', 'OpenRouter returned no completion choice.');
+        if (typeof message.content !== 'string') throw new ModelError('EMPTY_RESPONSE', 'OpenRouter returned empty completion content.');
         let content: unknown;
         try {
-          content = JSON.parse(message.content);
-        } catch {
-          throw new ModelError('MALFORMED_CONTENT', 'Completion content is not valid JSON.');
+          content = parseStructuredContent(message.content);
+        } catch (error) {
+          const malformed = error instanceof ModelError
+            ? error
+            : new ModelError('MALFORMED_CONTENT', 'Completion content is not valid JSON.');
+          if (attempt < 2) {
+            const delayMs = attempt === 0 ? 1_000 : 3_000;
+            this.options.onRetry?.({
+              requestId: request.requestId,
+              retryNumber: attempt + 1,
+              reason: malformed.message,
+              delayMs,
+            });
+            await this.delay(delayMs, signal);
+            continue;
+          }
+          throw malformed;
         }
         if (!validator(content)) {
           throw new ModelError(

@@ -72,7 +72,11 @@ export function loadToolkitConfig(options: {
 } = {}): ToolkitConfig {
   const cwd = options.cwd ?? process.cwd();
   const fileValues = readLocalEnvironment(cwd);
-  const environment = { ...fileValues, ...(options.env ?? process.env) };
+  const environment: Record<string, string | undefined> = { ...fileValues };
+  for (const [name, value] of Object.entries(options.env ?? process.env)) {
+    // Empty inherited variables must not erase a value configured in .env.
+    if (value?.trim()) environment[name] = value;
+  }
   const apiKey = environment.OPENROUTER_API_KEY?.trim() ?? '';
   const baseModel = environment.OPENROUTER_MODEL?.trim() ?? '';
   const modelFor = (role: Uppercase<WorkerRole>) =>

@@ -43,6 +43,8 @@ If the optional UI is absent, use the CLI for prompt/approval and the static HTM
 - [x] README with exact tested setup, env variables, API/backend requirements, and exported-play instructions.
 - [ ] Shareable video of at most three minutes.
 - [x] Current offline evidence links resolve and contains no credentials.
+- [x] Two credentialed live games and their static exports pass the complete harness.
+- [x] Clean-checkout lockfile install and verification reproduced.
 
 ## Submission description draft
 

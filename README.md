@@ -99,4 +99,5 @@ Open `http://127.0.0.1:4300`. The page supports description entry, spec review, 
 - A real implementation failure and repair is recorded in `docs/AI-DEV-LOG.md`.
 - Live OpenRouter runs `20260909T173352Z-9f60806e` and `20260909T173519Z-7e7412f3` pass every verification stage; curated artifacts are under `evidence/live-greenhouse/` and `evidence/live-moon/`.
 - `release/` contains a static two-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
+- A clean clone of release commit `8e19f60` completed `npm.cmd ci` with 0 vulnerabilities and passed the full verifier; see `evidence/REPRODUCTION.md`.
 - Human full-level playthroughs, a public URL, GitHub publication, and the final three-minute video remain pending.

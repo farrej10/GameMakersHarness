@@ -481,7 +481,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
         const assetPath = path.join(productionBuild, 'assets', `${id}.png`);
         try {
           const inspection = inspectPng(readFileSync(assetPath));
-          if (inspection.width !== 32 || inspection.height !== 32 || inspection.visiblePixels === 0) {
+          if (inspection.width !== 64 || inspection.height !== 64 || inspection.visiblePixels === 0) {
             assetFailures.push(`${id}: ${JSON.stringify(inspection)}`);
           }
         } catch (error) {
@@ -497,9 +497,9 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
         'art',
         assetFailures.length
           ? `Production asset inspection failed: ${assetFailures.join('; ')}`
-          : 'All manifest assets decode as visible 32 by 32 PNGs.',
+          : 'All manifest assets decode as visible 64 by 64 PNGs.',
         [relativeTo(selected.runRoot, productionBuild)],
-        'four valid production PNG assets',
+        'four valid 64 by 64 production PNG assets',
         assetFailures.length ? JSON.stringify(assetFailures) : null,
       ),
     );

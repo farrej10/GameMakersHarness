@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { ArtOutput, GameSpec, LevelOutput } from '../../src/contracts/index';
+import type { GameSpec, GridArtOutput, LevelOutput } from '../../src/contracts/index';
 import {
   validateArtArtifact,
   validateLevelArtifact,
@@ -20,7 +20,7 @@ function issueCodes(issues: ReturnType<typeof validateLogicSource>): string[] {
 
 const spec = readJson<GameSpec>('game-spec.json');
 const level = readJson<LevelOutput>('level.json');
-const art = readJson<ArtOutput>('art.json');
+const art = readJson<GridArtOutput>('art.json');
 const rules = readFileSync(
   new URL('../fixtures/reference/rules.ts', import.meta.url),
   'utf8',

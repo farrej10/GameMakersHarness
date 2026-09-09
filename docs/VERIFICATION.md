@@ -100,7 +100,7 @@ For `PROD-01`, use DOM health/score/state labels and before/after canvas capture
 
 ## 5. Assets, screenshots, and portability
 
-- Decode all four manifest PNG files using pngjs; dimensions exactly 32 by 32; nonempty visible pixels; unique asset IDs and paths.
+- Decode all four manifest PNG files using pngjs; dimensions exactly 64 by 64; nonempty visible pixels and transparent breathing room; unique asset IDs and paths.
 - Check URLs from exported build rather than only source files.
 - Capture actual generated start screen, active gameplay, win, loss, and failed-step screenshot. Label fixture screenshots as fixture scenarios.
 - Save browser trace for failures; save video or trace for the curated real repair run where practical.

@@ -104,10 +104,19 @@ function recordWorkerResult(
   role: 'logic' | 'level' | 'art',
   completed: CompletedWorker,
 ): void {
+  if (completed.requests.length === 0) {
+    const attemptRoot = path.join(runRoot, 'workers', role, 'attempt-0');
+    mkdirSync(attemptRoot, { recursive: true });
+    writeFileSync(path.join(attemptRoot, 'output.json'), stableJson(completed.output));
+    return;
+  }
   completed.requests.forEach(({ request, result, context }, index) => {
     const attemptRoot = path.join(runRoot, 'workers', role, `attempt-${index}`);
     mkdirSync(attemptRoot, { recursive: true });
-    writeFileSync(path.join(attemptRoot, 'output.json'), stableJson(result.content));
+    writeFileSync(
+      path.join(attemptRoot, 'output.json'),
+      stableJson(role === 'art' && index === completed.requests.length - 1 ? completed.output : result.content),
+    );
     writeFileSync(
       path.join(runRoot, 'requests', `${request.requestId}.json`),
       stableJson({
@@ -118,7 +127,9 @@ function recordWorkerResult(
           system: context.system,
           user: context.user,
         },
-        response: result,
+        response: role === 'art'
+          ? { ...result, content: { imageGenerated: true } }
+          : result,
       }),
     );
   });

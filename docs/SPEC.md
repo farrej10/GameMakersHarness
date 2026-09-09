@@ -30,7 +30,7 @@ Record evidence from both and identify which process each artifact demonstrates.
 | Defeat | Health reaches zero |
 | States | `ready`, `playing`, `won`, `lost` |
 | Controls | Enter or Start button begins; R or Restart button restarts after win/loss |
-| Art | Model designs a small pixel grid; deterministic renderer creates 32 by 32 PNGs |
+| Art | Image model creates isolated entities; trusted normalization produces transparent 64 by 64 PNGs, with deterministic grid fallback |
 | Audio | Excluded |
 | Backend | Node using native fetch to OpenRouter; no model credentials in browser |
 | Persistence | Files under an immutable run ID; no database or accounts |

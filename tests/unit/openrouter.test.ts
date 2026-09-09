@@ -7,6 +7,7 @@ import {
   ModelError,
   OpenRouterClient,
   RequestBudget,
+  type ImageModelRequest,
   type ModelRequest,
 } from '../../src/toolkit/openrouter';
 
@@ -75,6 +76,42 @@ async function errorCode(promise: Promise<unknown>): Promise<string> {
 }
 
 describe('OpenRouter client', () => {
+  it('uses the dedicated image endpoint and returns its base64 payload', async () => {
+    let url = '';
+    let sent: RequestInit | undefined;
+    const transport = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      url = String(input);
+      sent = init;
+      return Response.json({
+        id: 'image-1',
+        model: 'provider/image-model',
+        provider: 'Image Provider',
+        data: [{ b64_json: 'A'.repeat(128) }],
+        usage: { prompt_tokens: 12, completion_tokens: 0, cost: 0.02 },
+      });
+    });
+    const imageRequest: ImageModelRequest = {
+      requestId: 'art-player-1',
+      role: 'art',
+      model: 'provider/image-model',
+      prompt: 'One isolated player sprite.',
+    };
+    const { instance } = client({ fetch: transport });
+
+    await expect(instance.generateImage(imageRequest, new AbortController().signal)).resolves.toMatchObject({
+      content: { mimeType: 'image/png', imageBase64: 'A'.repeat(128) },
+      responseId: 'image-1',
+      reportedCostUsd: 0.02,
+    });
+    expect(url).toBe('https://openrouter.ai/api/v1/images');
+    expect(JSON.parse(String(sent?.body))).toEqual({
+      model: 'provider/image-model',
+      prompt: imageRequest.prompt,
+      n: 1,
+      aspect_ratio: '1:1',
+    });
+  });
+
   it('sends the strict structured request and parses usage metadata', async () => {
     let sent: RequestInit | undefined;
     const transport = vi.fn(async (_input: string | URL, init?: RequestInit) => {
@@ -319,6 +356,7 @@ describe('OpenRouter client', () => {
 describe('OpenRouter configuration', () => {
   it('applies role overrides and excludes the key from public config', () => {
     const config = loadToolkitConfig({
+      cwd: 'Z:/missing',
       env: {
         OPENROUTER_API_KEY: 'secret',
         OPENROUTER_MODEL: 'small/default',

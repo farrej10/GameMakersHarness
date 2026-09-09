@@ -37,26 +37,35 @@ async function main(): Promise<void> {
   try {
     const config = loadToolkitConfig({ cwd: projectRoot });
     checks.push({ name: 'OpenRouter key', passed: true, message: 'OPENROUTER_API_KEY is present (value hidden).' });
-    const modelIds = [...new Set(Object.values(config.models))];
     const response = await fetch('https://openrouter.ai/api/v1/models', {
       headers: { Authorization: `Bearer ${config.apiKey}` },
       signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) throw new Error(`Model catalog returned HTTP ${response.status}.`);
-    const body = await response.json() as { data?: Array<{ id?: string; supported_parameters?: string[] }> };
+    const body = await response.json() as { data?: Array<{
+      id?: string;
+      supported_parameters?: string[];
+      architecture?: { output_modalities?: string[] };
+    }> };
     const entries = body.data ?? [];
-    for (const modelId of modelIds) {
+    for (const [role, modelId] of Object.entries(config.models)) {
       const model = entries.find(({ id }) => id === modelId);
       const parameters = model?.supported_parameters ?? [];
       const structured = parameters.includes('response_format') || parameters.includes('structured_outputs');
+      const imageOutput = model?.architecture?.output_modalities?.includes('image') ?? false;
+      const supported = role === 'art' ? imageOutput : structured;
       checks.push({
-        name: `Model ${modelId}`,
-        passed: Boolean(model) && structured,
+        name: `${role} model ${modelId}`,
+        passed: Boolean(model) && supported,
         message: !model
           ? 'Model ID was not found in the current OpenRouter catalog.'
-          : structured
-            ? 'Catalog advertises structured-output support.'
-            : 'Catalog does not advertise a structured-output parameter.',
+          : supported
+            ? role === 'art'
+              ? 'Catalog advertises image output.'
+              : 'Catalog advertises structured-output support.'
+            : role === 'art'
+              ? 'Catalog does not advertise image output.'
+              : 'Catalog does not advertise a structured-output parameter.',
       });
     }
   } catch (error) {

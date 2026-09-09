@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "assets": [
-    { "id": "player", "path": "assets/player.png", "width": 32, "height": 32 },
-    { "id": "collectible", "path": "assets/collectible.png", "width": 32, "height": 32 },
-    { "id": "enemy", "path": "assets/enemy.png", "width": 32, "height": 32 },
-    { "id": "exit", "path": "assets/exit.png", "width": 32, "height": 32 }
+    { "id": "player", "path": "assets/player.png", "width": 64, "height": 64 },
+    { "id": "collectible", "path": "assets/collectible.png", "width": 64, "height": 64 },
+    { "id": "enemy", "path": "assets/enemy.png", "width": 64, "height": 64 },
+    { "id": "exit", "path": "assets/exit.png", "width": 64, "height": 64 }
   ]
 }

@@ -94,10 +94,10 @@ The orchestrator derives `asset-manifest.json` from approved spec. Do not make a
 {
   "schemaVersion": 1,
   "assets": [
-    { "id": "player", "path": "assets/player.png", "width": 32, "height": 32 },
-    { "id": "collectible", "path": "assets/collectible.png", "width": 32, "height": 32 },
-    { "id": "enemy", "path": "assets/enemy.png", "width": 32, "height": 32 },
-    { "id": "exit", "path": "assets/exit.png", "width": 32, "height": 32 }
+    { "id": "player", "path": "assets/player.png", "width": 64, "height": 64 },
+    { "id": "collectible", "path": "assets/collectible.png", "width": 64, "height": 64 },
+    { "id": "enemy", "path": "assets/enemy.png", "width": 64, "height": 64 },
+    { "id": "exit", "path": "assets/exit.png", "width": 64, "height": 64 }
   ]
 }
 ```
@@ -114,7 +114,7 @@ type ArtOutput = {
 };
 ```
 
-Exactly four sprites, one per ID. Each has exactly 16 rows of 16 characters matching `^[.123]{16}$`. `.` is transparent. Digits select approved palette indices 1, 2, 3. At least 16 pixels per sprite must be opaque. Render every cell as a 2 by 2 block in a 32 by 32 RGBA PNG. No base64, external image URLs, arbitrary SVG, or image-generation call in the MVP.
+Live image art contains exactly four sprites, one per ID, as base64-encoded PNG payloads normalized by trusted code to 64 by 64 RGBA pixels. Each PNG must decode, contain visible pixels, and retain transparent breathing room. The legacy 16 by 16 `.123` grid remains contract-valid only for deterministic fixtures and fallback; trusted rendering expands each grid cell to a 4 by 4 block in a 64 by 64 PNG. External URLs and arbitrary SVG are forbidden.
 
 If art generation or validation fails after its permitted correction attempt, emit four distinct deterministic placeholder shapes using the same palette and manifest. Record `artSource: "fallback"`; retain the failure. A provider authentication or budget failure stops the run and must not be hidden by fallback.
 

@@ -78,20 +78,15 @@ export function artContext(
   manifest: AssetManifest,
 ): ContextPacket {
   return packet(system, {
-    task: 'Return four code-native pixel sprite grids.',
+    task: 'Create four isolated 64 by 64 PNG sprites through the image-generation worker.',
     theme: spec.theme,
     manifest,
-    grammar: { rowsPerSprite: 16, columnsPerRow: 16, symbols: '.123', minimumOpaque: 16 },
-    completeValidExample: {
-      schemaVersion: 1,
-      sprites: ['player', 'collectible', 'enemy', 'exit'].map((id, index) => ({
-        id,
-        rows: Array.from({ length: 16 }, (_, y) =>
-          y >= 4 && y <= 11
-            ? '.'.repeat(2 + index) + String((index % 3) + 1).repeat(8 - index * 2) + '.'.repeat(6 + index)
-            : '................',
-        ),
-      })),
+    constraints: {
+      outputPixels: 64,
+      transparentBackground: true,
+      isolatedEntity: true,
+      consistentTopDownStyle: true,
+      forbidden: ['text', 'labels', 'scenery', 'multiple objects', 'ground shadows'],
     },
   });
 }

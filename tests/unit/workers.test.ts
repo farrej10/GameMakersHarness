@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { PNG } from 'pngjs';
 import { describe, expect, it, vi } from 'vitest';
-import type { ArtOutput, AssetManifest, GameSpec, LevelOutput, LogicOutput } from '../../src/contracts/index';
+import type { AssetManifest, GameSpec, GridArtOutput, LevelOutput, LogicOutput } from '../../src/contracts/index';
 import { artContext, levelContext, logicContext } from '../../src/toolkit/context';
 import { ModelError, type ModelClient, type ModelRequest, type ModelResult } from '../../src/toolkit/openrouter';
 import { validateArtArtifact } from '../../src/toolkit/validate';
@@ -16,7 +17,7 @@ function json<T>(name: string): T {
 
 const spec = json<GameSpec>('game-spec.json');
 const level = json<LevelOutput>('level.json');
-const art = json<ArtOutput>('art.json');
+const art = json<GridArtOutput>('art.json');
 const manifest = json<AssetManifest>('asset-manifest.json');
 const logic: LogicOutput = {
   schemaVersion: 1,
@@ -67,6 +68,29 @@ describe('role-specific context', () => {
 });
 
 describe('generation workers', () => {
+  it('requests four images and normalizes them into the raster art contract', async () => {
+    const png = new PNG({ width: 64, height: 64 });
+    for (let y = 0; y < 64; y += 1) for (let x = 0; x < 64; x += 1) {
+      const offset = (y * 64 + x) * 4;
+      const entity = x >= 16 && x < 48 && y >= 16 && y < 48;
+      png.data[offset] = entity ? 220 : 255;
+      png.data[offset + 1] = entity ? 80 : 255;
+      png.data[offset + 2] = entity ? 40 : 255;
+      png.data[offset + 3] = 255;
+    }
+    const imageBase64 = PNG.sync.write(png).toString('base64');
+    const generateImage = vi.fn(async (_request: unknown, _signal: AbortSignal) =>
+      modelResult({ mimeType: 'image/png', imageBase64 }, generateImage.mock.calls.length));
+    const client: ModelClient = { generate: vi.fn(), generateImage };
+
+    const result = await runArtWorker({ ...common, spec, manifest, client });
+
+    expect(generateImage).toHaveBeenCalledTimes(4);
+    expect(result.artSource).toBe('generated');
+    expect(result.output).toMatchObject({ schemaVersion: 1, format: 'png-64' });
+    expect(validateArtArtifact(result.output)).toEqual([]);
+  });
+
   it('accepts valid logic, level, and art fixture responses', async () => {
     await expect(
       runLogicWorker({ ...common, spec, client: fake([logic]).client }),

@@ -97,8 +97,8 @@ const AssetManifestItemSchema = <
   closedObject({
     id: Type.Literal(id),
     path: Type.Literal(assetPath),
-    width: Type.Literal(32),
-    height: Type.Literal(32),
+    width: Type.Literal(64),
+    height: Type.Literal(64),
   });
 
 export const AssetManifestSchema = closedObject({
@@ -119,11 +119,26 @@ export const SpriteGridSchema = closedObject({
     maxItems: 16,
   }),
 });
-export const ArtOutputSchema = closedObject({
+export const GridArtOutputSchema = closedObject({
   schemaVersion: Type.Literal(1),
   sprites: Type.Array(SpriteGridSchema, { minItems: 4, maxItems: 4 }),
 });
+export type GridArtOutput = Static<typeof GridArtOutputSchema>;
+export const RasterSpriteSchema = closedObject({
+  id: AssetIdSchema,
+  width: Type.Literal(64),
+  height: Type.Literal(64),
+  mimeType: Type.Literal('image/png'),
+  pngBase64: Type.String({ minLength: 80, maxLength: 350_000, pattern: '^[A-Za-z0-9+/]+={0,2}$' }),
+});
+export const RasterArtOutputSchema = closedObject({
+  schemaVersion: Type.Literal(1),
+  format: Type.Literal('png-64'),
+  sprites: Type.Array(RasterSpriteSchema, { minItems: 4, maxItems: 4 }),
+});
+export const ArtOutputSchema = Type.Union([GridArtOutputSchema, RasterArtOutputSchema]);
 export type ArtOutput = Static<typeof ArtOutputSchema>;
+export type RasterArtOutput = Static<typeof RasterArtOutputSchema>;
 
 export const PointSchema = closedObject({
   x: Type.Integer({ minimum: 40, maximum: 760 }),

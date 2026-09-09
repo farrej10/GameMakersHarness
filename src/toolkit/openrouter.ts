@@ -22,8 +22,16 @@ export type ModelResult = {
   reportedCostUsd: number | null;
   elapsedMs: number;
 };
+export type ImageModelRequest = {
+  requestId: string;
+  role: 'art';
+  model: string;
+  prompt: string;
+};
+export type ImageContent = { mimeType: 'image/png'; imageBase64: string };
 export interface ModelClient {
   generate(request: ModelRequest, signal: AbortSignal): Promise<ModelResult>;
+  generateImage?(request: ImageModelRequest, signal: AbortSignal): Promise<ModelResult>;
 }
 
 export type RetryNotice = {
@@ -373,5 +381,78 @@ export class OpenRouterClient implements ModelClient {
       }
     }
     throw new ModelError('NETWORK_ERROR', 'OpenRouter request attempts were exhausted.');
+  }
+
+  public async generateImage(request: ImageModelRequest, signal: AbortSignal): Promise<ModelResult> {
+    if (!request.model.trim()) throw new ModelError('CONFIG_ERROR', 'An image model ID is required.');
+    if (!request.prompt.trim()) throw new ModelError('CONFIG_ERROR', 'An image prompt is required.');
+    if (encoder.encode(request.prompt).length > this.contextLimitBytes) {
+      throw new ModelError('CONTEXT_LIMIT', 'Image prompt exceeds 24000 bytes.');
+    }
+    const started = this.clock();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      this.options.budget.reserve();
+      const timeoutSignal = AbortSignal.timeout(
+        Math.min(this.timeoutMs, Math.max(1, this.options.budget.remainingTimeMs)),
+      );
+      try {
+        const response = await this.transport('https://openrouter.ai/api/v1/images', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.options.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: request.model,
+            prompt: request.prompt,
+            n: 1,
+            aspect_ratio: '1:1',
+          }),
+          signal: AbortSignal.any([signal, timeoutSignal]),
+        });
+        const body = await response.json() as Record<string, unknown>;
+        if (!response.ok || body.error) {
+          const error = errorFromResponse(response.status, body);
+          if (attempt < 2 && error.code === 'RETRYABLE_HTTP') {
+            const delayMs = attempt === 0 ? 1_000 : 3_000;
+            this.options.onRetry?.({ requestId: request.requestId, retryNumber: attempt + 1, reason: error.message, delayMs });
+            await this.delay(delayMs, signal);
+            continue;
+          }
+          throw error;
+        }
+        const first = Array.isArray(body.data) ? body.data[0] as Record<string, unknown> | undefined : undefined;
+        const imageBase64 = typeof first?.b64_json === 'string' ? first.b64_json : '';
+        if (!imageBase64 || imageBase64.length > 28_000_000) {
+          throw new ModelError('MALFORMED_RESPONSE', 'OpenRouter returned no usable image payload.');
+        }
+        const bytes = Buffer.from(imageBase64, 'base64');
+        if (bytes.length < 64 || bytes.length > 20_000_000) {
+          throw new ModelError('MALFORMED_RESPONSE', 'OpenRouter image payload size is invalid.');
+        }
+        const usage = typeof body.usage === 'object' && body.usage !== null
+          ? body.usage as Record<string, unknown>
+          : {};
+        return {
+          content: { mimeType: 'image/png', imageBase64 } satisfies ImageContent,
+          responseId: typeof body.id === 'string' ? body.id : '',
+          requestedModel: request.model,
+          returnedModel: typeof body.model === 'string' ? body.model : request.model,
+          provider: typeof body.provider === 'string' ? body.provider : null,
+          promptTokens: numberOrNull(usage.prompt_tokens),
+          completionTokens: numberOrNull(usage.completion_tokens),
+          reportedCostUsd: numberOrNull(usage.cost),
+          elapsedMs: this.clock() - started,
+        };
+      } catch (error) {
+        if (error instanceof ModelError) throw error;
+        if (signal.aborted) throw new ModelError('ABORTED', sanitize(signal.reason ?? error));
+        if (attempt >= 2) throw new ModelError('NETWORK_ERROR', sanitize(error));
+        const delayMs = attempt === 0 ? 1_000 : 3_000;
+        this.options.onRetry?.({ requestId: request.requestId, retryNumber: attempt + 1, reason: sanitize(error), delayMs });
+        await this.delay(delayMs, signal);
+      }
+    }
+    throw new ModelError('NETWORK_ERROR', 'OpenRouter image request attempts were exhausted.');
   }
 }

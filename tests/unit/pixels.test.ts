@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
-import type { ArtOutput, GameSpec } from '../../src/contracts/index';
+import type { GameSpec, GridArtOutput } from '../../src/contracts/index';
 import {
   createFallbackArtOutput,
   inspectPng,
@@ -18,10 +18,10 @@ function readJson<T>(name: string): T {
 }
 
 const spec = readJson<GameSpec>('game-spec.json');
-const art = readJson<ArtOutput>('art.json');
+const art = readJson<GridArtOutput>('art.json');
 
 describe('pixel renderer', () => {
-  it('renders and decodes every reference sprite as a visible 32 by 32 PNG', () => {
+  it('renders and decodes every reference sprite as a visible 64 by 64 PNG', () => {
     const rendered = renderArtOutput(art, spec.theme.palette);
 
     expect([...rendered.keys()]).toEqual([
@@ -32,28 +32,28 @@ describe('pixel renderer', () => {
     ]);
     for (const png of rendered.values()) {
       expect(inspectPng(png)).toEqual({
-        width: 32,
-        height: 32,
+        width: 64,
+        height: 64,
         visiblePixels: expect.any(Number),
       });
       expect(inspectPng(png).visiblePixels).toBeGreaterThan(0);
     }
   });
 
-  it('expands every source pixel to an exact 2 by 2 RGBA block', () => {
+  it('expands every source pixel to an exact 4 by 4 RGBA block', () => {
     const sprite = structuredClone(art.sprites[0]!);
     sprite.rows = Array.from({ length: 16 }, (_, y) =>
       y === 3 ? '....1...........' : '................',
     );
     const decoded = PNG.sync.read(renderSpriteToPng(sprite, spec.theme.palette));
-    const alphaAt = (x: number, y: number) => decoded.data[(y * 32 + x) * 4 + 3];
+    const alphaAt = (x: number, y: number) => decoded.data[(y * 64 + x) * 4 + 3];
 
-    expect(alphaAt(8, 6)).toBe(255);
-    expect(alphaAt(9, 6)).toBe(255);
-    expect(alphaAt(8, 7)).toBe(255);
-    expect(alphaAt(9, 7)).toBe(255);
-    expect(alphaAt(7, 6)).toBe(0);
-    expect(alphaAt(10, 7)).toBe(0);
+    expect(alphaAt(16, 12)).toBe(255);
+    expect(alphaAt(19, 12)).toBe(255);
+    expect(alphaAt(16, 15)).toBe(255);
+    expect(alphaAt(19, 15)).toBe(255);
+    expect(alphaAt(15, 12)).toBe(0);
+    expect(alphaAt(20, 15)).toBe(0);
   });
 
   it('produces byte-identical PNGs for identical inputs', () => {
@@ -95,7 +95,7 @@ describe('fallback sprites', () => {
     expect(new Set(hashes)).toHaveLength(4);
     for (const png of rendered.values()) {
       expect(inspectPng(png)).toEqual(
-        expect.objectContaining({ width: 32, height: 32 }),
+        expect.objectContaining({ width: 64, height: 64 }),
       );
       expect(inspectPng(png).visiblePixels).toBeGreaterThan(0);
     }

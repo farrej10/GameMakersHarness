@@ -2,6 +2,7 @@ import * as ts from 'typescript/unstable/ast';
 import { createVirtualFileSystem } from 'typescript/unstable/fs';
 import { API } from 'typescript/unstable/sync';
 import type { ErrorObject, ValidateFunction } from 'ajv';
+import { PNG } from 'pngjs';
 import type { ArtOutput, GameSpec, LevelOutput } from '../contracts/index';
 import {
   validateArtOutput,
@@ -340,6 +341,35 @@ export function validateArtArtifact(value: unknown): ValidationIssue[] {
   }
 
   art.sprites.forEach((sprite, index) => {
+    if ('pngBase64' in sprite) {
+      try {
+        const png = PNG.sync.read(Buffer.from(sprite.pngBase64, 'base64'));
+        let visiblePixels = 0;
+        let transparentPixels = 0;
+        for (let offset = 3; offset < png.data.length; offset += 4) {
+          if (png.data[offset]! > 15) visiblePixels += 1;
+          else transparentPixels += 1;
+        }
+        if (png.width !== 64 || png.height !== 64 || visiblePixels < 128 || transparentPixels < 64) {
+          issues.push(issue(
+            'ART_RASTER_QUALITY',
+            `/sprites/${index}/pngBase64`,
+            `${sprite.id} must decode as a visible 64 by 64 PNG with transparent breathing room.`,
+            '64x64, >=128 visible pixels, >=64 transparent pixels',
+            `${png.width}x${png.height}, ${visiblePixels} visible, ${transparentPixels} transparent`,
+          ));
+        }
+      } catch {
+        issues.push(issue(
+          'ART_RASTER_DECODE',
+          `/sprites/${index}/pngBase64`,
+          `${sprite.id} is not a decodable PNG.`,
+          'valid PNG base64',
+          'decode failed',
+        ));
+      }
+      return;
+    }
     const opaquePixels = sprite.rows.reduce(
       (count, row) => count + [...row].filter((pixel) => pixel !== '.').length,
       0,

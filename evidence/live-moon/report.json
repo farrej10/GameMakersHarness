@@ -1,63 +1,99 @@
 {
-  "approvalHash": "28743fa312a419d9aee252170bbd0285f1ec7f99d2861542771eb8748ec546a1",
+  "approvalHash": "11648b21ac3a0327b70dc496c7b5f371a86938d1b83859c7a4d138f3df2cfb88",
   "artSource": "generated",
   "playableBuild": "build/index.html",
   "prompt": "An astronaut gathers three oxygen canisters on a moon base while avoiding patrolling repair drones. Collecting every canister wins.\n",
   "provenance": "live",
   "repairEvidence": [],
-  "reportedCostUsd": 0.00024107000000000002,
-  "requestCount": 4,
+  "reportedCostUsd": 0.155334,
+  "requestCount": 8,
   "requests": [
     {
-      "completionTokens": 452,
-      "contextSha256": "0c21d15cf9c4127ed764f77315b9bbebb8f555a46983de77aaf3e33b85091254",
-      "elapsedMs": 13662,
-      "promptTokens": 640,
-      "provider": "Parasail",
-      "reportedCostUsd": 0.00008636,
-      "requestedModel": "openai/gpt-oss-20b",
-      "requestId": "art_0",
-      "returnedModel": "openai/gpt-oss-20b",
+      "completionTokens": 1290,
+      "contextSha256": "e85589ef98763ca5a3e6e0684bfb9d11ce6bc74aaf60885191eabfea1f1f9b12",
+      "elapsedMs": 6266,
+      "promptTokens": 288,
+      "provider": null,
+      "reportedCostUsd": 0.0387864,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_collectible",
+      "returnedModel": "google/gemini-2.5-flash-image",
       "role": "art"
     },
     {
-      "completionTokens": 280,
-      "contextSha256": "dca0c1d78cbb75af1540e15303798cd9b9ffeb029376c4fc63567ee855e8bb67",
-      "elapsedMs": 19808,
-      "promptTokens": 853,
-      "provider": "Darkbloom",
-      "reportedCostUsd": 0.00004506,
+      "completionTokens": 1290,
+      "contextSha256": "e85589ef98763ca5a3e6e0684bfb9d11ce6bc74aaf60885191eabfea1f1f9b12",
+      "elapsedMs": 6435,
+      "promptTokens": 287,
+      "provider": null,
+      "reportedCostUsd": 0.0387861,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_enemy",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "e85589ef98763ca5a3e6e0684bfb9d11ce6bc74aaf60885191eabfea1f1f9b12",
+      "elapsedMs": 11157,
+      "promptTokens": 286,
+      "provider": null,
+      "reportedCostUsd": 0.0387858,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_exit",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1300,
+      "contextSha256": "e85589ef98763ca5a3e6e0684bfb9d11ce6bc74aaf60885191eabfea1f1f9b12",
+      "elapsedMs": 6515,
+      "promptTokens": 286,
+      "provider": null,
+      "reportedCostUsd": 0.0388108,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_player",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 465,
+      "contextSha256": "76171dd520d5ec5288cedc0054b26a58cd7db532117bec62ff431f8b5b3445df",
+      "elapsedMs": 20449,
+      "promptTokens": 452,
+      "provider": "AkashML",
+      "reportedCostUsd": 0.00005554,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "level_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "level"
     },
     {
-      "completionTokens": 301,
-      "contextSha256": "03778cf16600e3d2b64dc37516c35928bcab128d006eb5ee4792365461f2e310",
-      "elapsedMs": 6695,
-      "promptTokens": 616,
-      "provider": "CoreWeave",
-      "reportedCostUsd": 0.00005761,
+      "completionTokens": 313,
+      "contextSha256": "03a0219780c79a3212ed4bc0f0b0aa4ecb9f184a01836a960d1470a42824dd49",
+      "elapsedMs": 42242,
+      "promptTokens": 608,
+      "provider": "DeepInfra",
+      "reportedCostUsd": 0.00006206,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "logic_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "logic"
     },
     {
-      "completionTokens": 316,
+      "completionTokens": 235,
       "contextSha256": null,
-      "elapsedMs": 10716,
-      "promptTokens": 1022,
-      "provider": "Darkbloom",
-      "reportedCostUsd": 0.00005204,
+      "elapsedMs": 5725,
+      "promptTokens": 423,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.0000473,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "spec_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "spec"
     }
   ],
-  "runId": "20260909T173519Z-7e7412f3",
+  "runId": "20260909T211338Z-c0505a5e",
   "schemaVersion": 1,
   "spec": {
     "adaptations": [],
@@ -71,14 +107,14 @@
     "description": "An astronaut gathers three oxygen canisters on a moon base while avoiding patrolling repair drones. Collecting every canister wins.",
     "enemies": {
       "behavior": "horizontal-patrol",
-      "count": 1,
-      "speed": 60
+      "count": 2,
+      "speed": 80
     },
     "objective": {
       "mode": "collect-all"
     },
     "player": {
-      "health": 3,
+      "health": 4,
       "speed": 180
     },
     "schemaVersion": 1,
@@ -86,23 +122,23 @@
     "theme": {
       "collectibleName": "Oxygen Canister",
       "enemyName": "Repair Drone",
-      "exitName": "Base Exit",
+      "exitName": "---",
       "palette": [
         "#1A1A2E",
-        "#3E3E5C",
-        "#5C5C8A",
-        "#8A8AB9"
+        "#E94560",
+        "#F4D35E",
+        "#2EC4B6"
       ],
       "playerName": "Astronaut"
     },
     "title": "Moon Base Rescue"
   },
   "status": {
-    "activeElapsedMs": 51940,
+    "activeElapsedMs": 70299,
     "message": null,
     "reasonCode": null,
-    "requestCount": 4,
-    "runId": "20260909T173519Z-7e7412f3",
+    "requestCount": 8,
+    "runId": "20260909T211338Z-c0505a5e",
     "schemaVersion": 1,
     "state": "verified"
   },
@@ -196,9 +232,9 @@
         "artifactPaths": [
           "build"
         ],
-        "expected": "four valid production PNG assets",
+        "expected": "four valid 64 by 64 production PNG assets",
         "id": "ASSET-01",
-        "message": "All manifest assets decode as visible 32 by 32 PNGs.",
+        "message": "All manifest assets decode as visible 64 by 64 PNGs.",
         "owner": "art",
         "stage": "assets",
         "status": "passed"
@@ -238,35 +274,35 @@
         "status": "passed"
       }
     ],
-    "finishedAt": "2026-09-09T17:36:33.628Z",
-    "runId": "20260909T173519Z-7e7412f3",
+    "finishedAt": "2026-09-09T21:16:19.626Z",
+    "runId": "20260909T211338Z-c0505a5e",
     "schemaVersion": 1,
-    "startedAt": "2026-09-09T17:36:12.382Z",
+    "startedAt": "2026-09-09T21:15:57.510Z",
     "status": "passed"
   },
   "workerIntervals": [
     {
-      "finishedAt": "2026-09-09T17:35:30.681Z",
+      "finishedAt": "2026-09-09T21:13:44.494Z",
       "role": "spec",
-      "startedAt": "2026-09-09T17:35:19.951Z",
+      "startedAt": "2026-09-09T21:13:38.754Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:36:12.292Z",
+      "finishedAt": "2026-09-09T21:15:57.422Z",
       "role": "logic",
-      "startedAt": "2026-09-09T17:35:52.445Z",
+      "startedAt": "2026-09-09T21:15:15.091Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:36:12.294Z",
+      "finishedAt": "2026-09-09T21:15:57.424Z",
       "role": "level",
-      "startedAt": "2026-09-09T17:35:52.454Z",
+      "startedAt": "2026-09-09T21:15:15.100Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:36:12.296Z",
+      "finishedAt": "2026-09-09T21:15:57.438Z",
       "role": "art",
-      "startedAt": "2026-09-09T17:35:52.454Z",
+      "startedAt": "2026-09-09T21:15:15.100Z",
       "status": "completed"
     }
   ]

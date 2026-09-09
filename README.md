@@ -97,7 +97,7 @@ Open `http://127.0.0.1:4300`. The page supports description entry, spec review, 
 - Offline reference verification passes.
 - Unit and integration tests demonstrate overlapping worker calls, fixed-path integration, approval invalidation, art fallback, protected-file detection, and a bounded autonomous logic repair.
 - A real implementation failure and repair is recorded in `docs/AI-DEV-LOG.md`.
-- Live OpenRouter runs `20260909T173352Z-9f60806e` and `20260909T173519Z-7e7412f3` pass every verification stage; curated artifacts are under `evidence/live-greenhouse/` and `evidence/live-moon/`.
+- Live OpenRouter runs `20260909T211322Z-64f94916` and `20260909T211338Z-c0505a5e` use generated 64 by 64 image art and pass every verification stage; curated artifacts are under `evidence/live-greenhouse/` and `evidence/live-moon/`.
 - `release/` contains a static two-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
 - Public playable site: <https://farrej10.github.io/GameMakersHarness/>. Verify the deployed landing page and both games with `npm.cmd run check:public -- https://farrej10.github.io/GameMakersHarness/`.
 - A clean clone of release commit `8e19f60` completed `npm.cmd ci` with 0 vulnerabilities and passed the full verifier; see `evidence/REPRODUCTION.md`.

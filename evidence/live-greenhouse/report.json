@@ -1,63 +1,99 @@
 {
-  "approvalHash": "91dbb7f86ffb63509dd00d9f019130f790880f846867d6a79b6016e82348bf86",
+  "approvalHash": "330612e3e87a6f9f31e5a3803a74ac87491a523c9045f2d667a5058e252f4d41",
   "artSource": "generated",
   "playableBuild": "build/index.html",
   "prompt": "A maintenance robot must collect six batteries in an overgrown greenhouse while rogue sprinklers chase it, then return to its charging dock.\n",
   "provenance": "live",
   "repairEvidence": [],
-  "reportedCostUsd": 0.00036470999999999997,
-  "requestCount": 5,
+  "reportedCostUsd": 0.15537234,
+  "requestCount": 7,
   "requests": [
     {
-      "completionTokens": 396,
-      "contextSha256": "bfd4abd16e7d19c050273dd753e4b2bacfd0410dccc06109ba529422bf67ec00",
-      "elapsedMs": 3821,
-      "promptTokens": 637,
-      "provider": "Phala",
-      "reportedCostUsd": 0.00008488,
-      "requestedModel": "openai/gpt-oss-20b",
-      "requestId": "art_0",
-      "returnedModel": "openai/gpt-oss-20b",
+      "completionTokens": 1290,
+      "contextSha256": "34a2ad4a0a2d80532122a1d20e4e7f92e8d76801cfa7cd0abb1f4faf3fe1f091",
+      "elapsedMs": 5751,
+      "promptTokens": 291,
+      "provider": null,
+      "reportedCostUsd": 0.0387873,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_collectible",
+      "returnedModel": "google/gemini-2.5-flash-image",
       "role": "art"
     },
     {
-      "completionTokens": 964,
+      "completionTokens": 1290,
+      "contextSha256": "34a2ad4a0a2d80532122a1d20e4e7f92e8d76801cfa7cd0abb1f4faf3fe1f091",
+      "elapsedMs": 6142,
+      "promptTokens": 292,
+      "provider": null,
+      "reportedCostUsd": 0.0387876,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_enemy",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "34a2ad4a0a2d80532122a1d20e4e7f92e8d76801cfa7cd0abb1f4faf3fe1f091",
+      "elapsedMs": 7697,
+      "promptTokens": 291,
+      "provider": null,
+      "reportedCostUsd": 0.0387873,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_exit",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "34a2ad4a0a2d80532122a1d20e4e7f92e8d76801cfa7cd0abb1f4faf3fe1f091",
+      "elapsedMs": 6843,
+      "promptTokens": 291,
+      "provider": null,
+      "reportedCostUsd": 0.0387873,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_player",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 719,
       "contextSha256": "8a3952419ba7f49086e710dd15e89104417b9c749321fbb6b416be56abdbd3c4",
-      "elapsedMs": 10488,
-      "promptTokens": 452,
-      "provider": "Parasail",
-      "reportedCostUsd": 0.00015752,
+      "elapsedMs": 6239,
+      "promptTokens": 439,
+      "provider": "DeepInfra",
+      "reportedCostUsd": 0.00011383,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "level_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "level"
     },
     {
-      "completionTokens": 310,
+      "completionTokens": 298,
       "contextSha256": "6a9aae1f46ab3d5a918f06e2e66ced1182999f33316ce0ef92858dfde8513ad6",
-      "elapsedMs": 19094,
-      "promptTokens": 622,
-      "provider": "Novita",
-      "reportedCostUsd": 0.00007138,
+      "elapsedMs": 3892,
+      "promptTokens": 623,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00006275,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "logic_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "logic"
     },
     {
-      "completionTokens": 259,
+      "completionTokens": 258,
       "contextSha256": null,
-      "elapsedMs": 2744,
-      "promptTokens": 424,
-      "provider": "Parasail",
-      "reportedCostUsd": 0.00005093,
+      "elapsedMs": 15402,
+      "promptTokens": 1023,
+      "provider": "Darkbloom",
+      "reportedCostUsd": 0.00004626,
       "requestedModel": "openai/gpt-oss-20b",
       "requestId": "spec_0",
       "returnedModel": "openai/gpt-oss-20b",
       "role": "spec"
     }
   ],
-  "runId": "20260909T173352Z-9f60806e",
+  "runId": "20260909T211322Z-64f94916",
   "schemaVersion": 1,
   "spec": {
     "adaptations": [],
@@ -85,24 +121,24 @@
     "seed": 42,
     "theme": {
       "collectibleName": "Battery",
-      "enemyName": "Rogue Sprinkler",
-      "exitName": "Charging Dock",
+      "enemyName": "Sprinkler",
+      "exitName": "Dock",
       "palette": [
-        "#1A2B3C",
-        "#4D5E6F",
-        "#7A8B9C",
-        "#ADBEEF"
+        "#14231D",
+        "#376B4B",
+        "#88C070",
+        "#F2C14E"
       ],
-      "playerName": "Maintenance Robot"
+      "playerName": "Robot"
     },
-    "title": "Greenhouse Maintenance"
+    "title": "Greenhouse Rescue"
   },
   "status": {
-    "activeElapsedMs": 43353,
+    "activeElapsedMs": 65748,
     "message": null,
     "reasonCode": null,
-    "requestCount": 5,
-    "runId": "20260909T173352Z-9f60806e",
+    "requestCount": 7,
+    "runId": "20260909T211322Z-64f94916",
     "schemaVersion": 1,
     "state": "verified"
   },
@@ -196,9 +232,9 @@
         "artifactPaths": [
           "build"
         ],
-        "expected": "four valid production PNG assets",
+        "expected": "four valid 64 by 64 production PNG assets",
         "id": "ASSET-01",
-        "message": "All manifest assets decode as visible 32 by 32 PNGs.",
+        "message": "All manifest assets decode as visible 64 by 64 PNGs.",
         "owner": "art",
         "stage": "assets",
         "status": "passed"
@@ -238,35 +274,35 @@
         "status": "passed"
       }
     ],
-    "finishedAt": "2026-09-09T17:34:55.527Z",
-    "runId": "20260909T173352Z-9f60806e",
+    "finishedAt": "2026-09-09T21:15:03.722Z",
+    "runId": "20260909T211322Z-64f94916",
     "schemaVersion": 1,
-    "startedAt": "2026-09-09T17:34:34.222Z",
+    "startedAt": "2026-09-09T21:14:40.179Z",
     "status": "passed"
   },
   "workerIntervals": [
     {
-      "finishedAt": "2026-09-09T17:33:54.839Z",
+      "finishedAt": "2026-09-09T21:13:37.951Z",
       "role": "spec",
-      "startedAt": "2026-09-09T17:33:52.081Z",
+      "startedAt": "2026-09-09T21:13:22.534Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:34:34.132Z",
+      "finishedAt": "2026-09-09T21:14:40.058Z",
       "role": "logic",
-      "startedAt": "2026-09-09T17:34:14.961Z",
+      "startedAt": "2026-09-09T21:14:13.419Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:34:34.134Z",
+      "finishedAt": "2026-09-09T21:14:40.060Z",
       "role": "level",
-      "startedAt": "2026-09-09T17:34:14.969Z",
+      "startedAt": "2026-09-09T21:14:13.427Z",
       "status": "completed"
     },
     {
-      "finishedAt": "2026-09-09T17:34:34.136Z",
+      "finishedAt": "2026-09-09T21:14:40.086Z",
       "role": "art",
-      "startedAt": "2026-09-09T17:34:14.969Z",
+      "startedAt": "2026-09-09T21:14:13.427Z",
       "status": "completed"
     }
   ]

@@ -1,13 +1,13 @@
 # Live OpenRouter runs
 
-Both runs used `openai/gpt-oss-20b` with low reasoning and strict structured outputs on 2026-09-09. OpenRouter selected providers per request. Cost values below are the API's reported cost for retained successful responses; retries count toward `requestCount` but OpenRouter does not return their usage in the final response object.
+Both runs used `openai/gpt-oss-20b` with low reasoning and strict structured outputs for specification, logic, and level work. Art used `google/gemini-2.5-flash-image`; trusted code normalized each generated entity into a transparent 64 by 64 PNG. OpenRouter selected providers per request. Cost values below are the API's reported cost for retained successful responses; retries count toward `requestCount` but OpenRouter does not return their usage in the final response object.
 
 | Game | Run | Result | Requests | Active time | Reported cost |
 | --- | --- | --- | ---: | ---: | ---: |
-| Greenhouse Maintenance | `20260909T173352Z-9f60806e` | 11/11 stages passed | 5 | 43.353 s | $0.00036471 |
-| Moon Base Rescue | `20260909T173519Z-7e7412f3` | 11/11 stages passed | 4 | 51.940 s | $0.00024107 |
+| Greenhouse Rescue | `20260909T211322Z-64f94916` | 11/11 stages passed | 7 | 65.748 s | $0.15537234 |
+| Moon Base Rescue | `20260909T211338Z-c0505a5e` | 11/11 stages passed | 8 | 70.299 s | $0.15533400 |
 
-The logic, level, and art worker intervals overlap in both `events.jsonl` timelines. The generated games differ in collection count, objective mode, enemy behavior, level placement, palette, names, and pixel sprites.
+The logic and level workers overlap with the four-request art workstream in both `events.jsonl` timelines. The generated games differ in collection count, objective mode, enemy behavior, level placement, palette, names, and image-generated pixel sprites.
 
 Visual inspection found readable HUD text, sufficient foreground/background contrast, distinct entity silhouettes, and visible theme differences. Automated screenshots cover initial, active, win, and loss states. A human full-level completion remains a release check because the automated actual-level bot intentionally proves only one reachable collectible.
 

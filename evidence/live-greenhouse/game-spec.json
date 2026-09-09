@@ -24,15 +24,15 @@
   "seed": 42,
   "theme": {
     "collectibleName": "Battery",
-    "enemyName": "Rogue Sprinkler",
-    "exitName": "Charging Dock",
+    "enemyName": "Sprinkler",
+    "exitName": "Dock",
     "palette": [
-      "#1A2B3C",
-      "#4D5E6F",
-      "#7A8B9C",
-      "#ADBEEF"
+      "#14231D",
+      "#376B4B",
+      "#88C070",
+      "#F2C14E"
     ],
-    "playerName": "Maintenance Robot"
+    "playerName": "Robot"
   },
-  "title": "Greenhouse Maintenance"
+  "title": "Greenhouse Rescue"
 }

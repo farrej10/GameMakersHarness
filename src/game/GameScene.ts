@@ -55,6 +55,7 @@ export class GameScene extends Phaser.Scene {
   private exitView!: Phaser.GameObjects.Arc | Phaser.GameObjects.Image;
   private enemyViews = new Map<string, Phaser.GameObjects.Arc | Phaser.GameObjects.Image>();
   private collectibleViews = new Map<string, Phaser.GameObjects.Arc | Phaser.GameObjects.Image>();
+  private collectibleLabels = new Map<string, Phaser.GameObjects.Text>();
   private lastLoggedErrorCount = 0;
 
   private readonly startButton = () => {
@@ -99,7 +100,16 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(
       color(this.currentSpec.theme.palette[0], 0x14231d),
     );
-    this.add.grid(400, 300, 800, 600, 40, 40, 0xffffff, 0, 0x88c070, 0.1);
+    const layout = this.currentSpec.world?.layout ?? 'open';
+    const cellWidth = layout === 'lanes' ? 200 : layout === 'perimeter' ? 80 : 40;
+    const cellHeight = layout === 'lanes' ? 75 : layout === 'perimeter' ? 80 : 40;
+    this.add.grid(400, 300, 800, 600, cellWidth, cellHeight, 0xffffff, 0, 0x88c070, 0.1);
+    if (layout === 'quadrants') {
+      this.add.rectangle(400, 300, 4, 600, color(this.currentSpec.theme.palette[2], 0x88c070), 0.22);
+      this.add.rectangle(400, 300, 800, 4, color(this.currentSpec.theme.palette[2], 0x88c070), 0.22);
+    } else if (layout === 'perimeter') {
+      this.add.rectangle(400, 300, 720, 520, 0x000000, 0).setStrokeStyle(3, color(this.currentSpec.theme.palette[2], 0x88c070), 0.3);
+    }
     this.entityLayer = this.add.container(0, 0);
     this.rebuildViews();
 
@@ -184,6 +194,7 @@ export class GameScene extends Phaser.Scene {
     this.entityLayer.removeAll(true);
     this.enemyViews.clear();
     this.collectibleViews.clear();
+    this.collectibleLabels.clear();
 
     const palette = this.currentSpec.theme.palette;
     this.exitView = __USE_PIXEL_ASSETS__
@@ -212,6 +223,18 @@ export class GameScene extends Phaser.Scene {
             .setStrokeStyle(2, 0xffffff);
       this.collectibleViews.set(collectible.id, view);
       this.entityLayer.add(view);
+      if (this.currentSpec.collectibles.interaction === 'ordered') {
+        const label = this.add.text(collectible.x + 18, collectible.y - 28, collectible.id.slice(1), {
+          color: '#ffffff',
+          backgroundColor: '#111827',
+          fontFamily: 'system-ui, sans-serif',
+          fontSize: '15px',
+          fontStyle: 'bold',
+          padding: { x: 5, y: 2 },
+        }).setOrigin(0.5).setStroke('#000000', 2);
+        this.collectibleLabels.set(collectible.id, label);
+        this.entityLayer.add(label);
+      }
     }
 
     for (const enemy of this.state.enemies) {
@@ -250,12 +273,29 @@ export class GameScene extends Phaser.Scene {
     );
     for (const [id, view] of this.collectibleViews) {
       view.setVisible(activeCollectibles.has(id));
+      this.collectibleLabels.get(id)?.setVisible(activeCollectibles.has(id));
     }
+
+    const dash = this.currentSpec.player.movement.mode === 'dash'
+      ? this.currentSpec.player.movement
+      : null;
+    this.playerView.setAlpha(
+      dash && this.state.tick < (this.state.player.nextDashTick ?? 0) ? 0.65 : 1,
+    );
 
     requiredElement('[data-testid="game-title"]').textContent =
       this.currentSpec.title;
+    const movement = this.currentSpec.player.movement?.mode ?? 'standard';
+    const mechanicHint = movement === 'sprint'
+      ? ' Hold Shift to sprint.'
+      : movement === 'dash'
+        ? ' Press Space to dash.'
+        : '';
+    const orderHint = this.currentSpec.collectibles.interaction === 'ordered'
+      ? ' Collect targets in numbered order.'
+      : '';
     requiredElement('[data-testid="game-objective"]').textContent =
-      this.currentSpec.description;
+      `${this.currentSpec.description}${mechanicHint}${orderHint}`;
     requiredElement('[data-testid="game-score"]').textContent =
       `Score: ${this.state.score}/${this.currentSpec.collectibles.count}`;
     requiredElement('[data-testid="game-health"]').textContent =

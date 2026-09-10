@@ -11,6 +11,8 @@ export class KeyboardInput {
   private readonly a: Phaser.Input.Keyboard.Key;
   private readonly s: Phaser.Input.Keyboard.Key;
   private readonly d: Phaser.Input.Keyboard.Key;
+  private readonly shift: Phaser.Input.Keyboard.Key;
+  private readonly space: Phaser.Input.Keyboard.Key;
   public readonly start: Phaser.Input.Keyboard.Key;
   public readonly restart: Phaser.Input.Keyboard.Key;
 
@@ -23,6 +25,8 @@ export class KeyboardInput {
     this.a = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.s = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.d = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    this.shift = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+    this.space = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.start = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
     this.restart = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
     this.trackedKeys = [
@@ -34,6 +38,8 @@ export class KeyboardInput {
       this.a,
       this.s,
       this.d,
+      this.shift,
+      this.space,
       this.start,
       this.restart,
     ];
@@ -46,6 +52,8 @@ export class KeyboardInput {
       down: this.down.isDown || this.s.isDown,
       left: this.left.isDown || this.a.isDown,
       right: this.right.isDown || this.d.isDown,
+      sprint: this.shift.isDown,
+      action: this.space.isDown,
     };
   }
 

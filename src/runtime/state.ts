@@ -18,6 +18,8 @@ function copyInput(input: InputState): InputState {
     down: input.down,
     left: input.left,
     right: input.right,
+    ...(input.sprint === undefined ? {} : { sprint: input.sprint }),
+    ...(input.action === undefined ? {} : { action: input.action }),
   };
 }
 
@@ -48,6 +50,10 @@ export function createInitialState(
       y: level.playerSpawn.y,
       health: spec.player.health,
       nextDamageTick: 0,
+      stamina: spec.player.movement?.mode === 'sprint'
+        ? spec.player.movement.staminaTicks
+        : 0,
+      nextDashTick: 0,
     },
     enemies: level.enemies.map((enemy) => ({
       ...enemy,

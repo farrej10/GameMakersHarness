@@ -1,6 +1,6 @@
 # Agentic Game Maker Toolkit
 
-Agentic Game Maker converts a short, supported description into a playable top-down collection/survival game. Specialized OpenRouter workers produce a specification, rules, level, and pixel art; trusted code validates and integrates those artifacts, runs browser gameplay tests, and performs at most three owner-routed repair attempts without another human prompt.
+Agentic Game Maker converts a short description into a playable game from a bounded top-down action-collection family. Specialized OpenRouter workers choose a game identity and compatible movement, collection, threat, objective, layout, and pressure mechanics; trusted code validates and integrates their rules, level, and pixel art, runs browser gameplay tests, and performs at most three owner-routed repair attempts without another human prompt.
 
 The deterministic runtime, validation harness, orchestrator, repair loop, reports, CLI, and local control page are implemented. Two distinct live OpenRouter games pass the complete harness and are exported under `release/`; repository publication, public deployment, human full-level playthroughs, and the final video remain release gates.
 
@@ -72,6 +72,8 @@ npm.cmd run game:serve -- --root runs/<run-id>/build --port 4173
 ```
 
 The exported build does not require an OpenRouter key.
+
+Generated games can combine standard, stamina sprint, or cooldown dash movement; touch or ordered collection; chase, horizontal patrol, vertical patrol, or guard enemies; collection, collection-and-exit, or survival-and-exit objectives; four placement layouts; and rising-danger or darkness themes. The specification gate requires an identity brief and at least three material choices beyond the plain template.
 
 ## Optional local control page
 

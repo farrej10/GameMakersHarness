@@ -26,10 +26,13 @@ export const VerificationRunIdSchema = Type.Union([
 export const EnemyBehaviorSchema = Type.Union([
   Type.Literal('chase'),
   Type.Literal('horizontal-patrol'),
+  Type.Literal('vertical-patrol'),
+  Type.Literal('guard'),
 ]);
 export const ObjectiveModeSchema = Type.Union([
   Type.Literal('collect-all'),
   Type.Literal('collect-then-exit'),
+  Type.Literal('survive-then-exit'),
 ]);
 export const AssetIdSchema = Type.Union([
   Type.Literal('player'),
@@ -63,16 +66,63 @@ export const GameSpecSchema = closedObject({
   player: closedObject({
     speed: Type.Number({ minimum: 140, maximum: 220 }),
     health: Type.Integer({ minimum: 2, maximum: 5 }),
+    movement: Type.Union([
+      closedObject({ mode: Type.Literal('standard') }),
+      closedObject({
+        mode: Type.Literal('sprint'),
+        multiplier: Type.Number({ minimum: 1.4, maximum: 2 }),
+        staminaTicks: Type.Integer({ minimum: 120, maximum: 600 }),
+      }),
+      closedObject({
+        mode: Type.Literal('dash'),
+        distance: Type.Integer({ minimum: 60, maximum: 140 }),
+        cooldownTicks: Type.Integer({ minimum: 60, maximum: 240 }),
+      }),
+    ]),
   }),
   collectibles: closedObject({
     count: Type.Integer({ minimum: 3, maximum: 10 }),
+    interaction: Type.Union([
+      Type.Literal('touch'),
+      Type.Literal('ordered'),
+    ]),
   }),
   enemies: closedObject({
     count: Type.Integer({ minimum: 1, maximum: 4 }),
     speed: Type.Number({ minimum: 40, maximum: 100 }),
     behavior: EnemyBehaviorSchema,
   }),
-  objective: closedObject({ mode: ObjectiveModeSchema }),
+  objective: Type.Union([
+    closedObject({ mode: Type.Literal('collect-all') }),
+    closedObject({ mode: Type.Literal('collect-then-exit') }),
+    closedObject({
+      mode: Type.Literal('survive-then-exit'),
+      survivalTicks: Type.Integer({ minimum: 600, maximum: 3600 }),
+    }),
+  ]),
+  identity: closedObject({
+    fantasy: NonEmptyText(120),
+    signatureMechanic: NonEmptyText(120),
+    dramaticPressure: NonEmptyText(120),
+    pacing: Type.Union([
+      Type.Literal('relaxed'),
+      Type.Literal('escalating'),
+      Type.Literal('frantic'),
+    ]),
+  }),
+  world: closedObject({
+    layout: Type.Union([
+      Type.Literal('open'),
+      Type.Literal('quadrants'),
+      Type.Literal('lanes'),
+      Type.Literal('perimeter'),
+    ]),
+    pressure: Type.Union([
+      Type.Literal('none'),
+      Type.Literal('rising-danger'),
+      Type.Literal('darkness'),
+    ]),
+  }),
   adaptations: Type.Array(NonEmptyText(200), {
     minItems: 0,
     maxItems: 8,
@@ -192,7 +242,7 @@ export type RepairOutput<T> = {
 
 export type Vec2 = Readonly<{ x: number; y: number }>;
 export type EnemyContext = Readonly<{
-  behavior: 'chase' | 'horizontal-patrol';
+  behavior: 'chase' | 'horizontal-patrol' | 'vertical-patrol' | 'guard';
   enemy: Readonly<{ x: number; y: number; vx: number; vy: number }>;
   player: Vec2;
   speed: number;
@@ -204,10 +254,12 @@ export type EnemyContext = Readonly<{
   }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
   score: number;
   target: number;
   atExit: boolean;
+  elapsedTicks: number;
+  survivalTicks: number;
 }>;
 export type RuleFunctions = Readonly<{
   getEnemyVelocity(context: EnemyContext): Vec2;
@@ -219,6 +271,8 @@ export const InputStateSchema = closedObject({
   down: Type.Boolean(),
   left: Type.Boolean(),
   right: Type.Boolean(),
+  sprint: Type.Optional(Type.Boolean()),
+  action: Type.Optional(Type.Boolean()),
 });
 export type InputState = Static<typeof InputStateSchema>;
 
@@ -236,6 +290,8 @@ export const GameSnapshotSchema = closedObject({
     y: Type.Number(),
     health: Type.Integer({ minimum: 0 }),
     nextDamageTick: Type.Integer({ minimum: 0 }),
+    stamina: Type.Optional(Type.Integer({ minimum: 0 })),
+    nextDashTick: Type.Optional(Type.Integer({ minimum: 0 })),
   }),
   enemies: Type.Array(
     closedObject({

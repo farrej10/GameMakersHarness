@@ -48,7 +48,10 @@ export async function runArtWorker(options: {
           model: options.model,
           prompt: `${options.systemPrompt}\n\nCreate only the ${id} sprite: ${names[id]}. ` +
             `Approved palette: ${options.spec.theme.palette.join(', ')}. ` +
-            `Game theme: ${options.spec.description}`,
+            `Game theme: ${options.spec.description}. ` +
+            `Fantasy: ${options.spec.identity.fantasy}. ` +
+            `Visual pressure: ${options.spec.identity.dramaticPressure}. ` +
+            `World layout: ${options.spec.world.layout}.`,
         };
         const result = await options.client.generateImage(request, options.signal);
         const content = result.content as Partial<ImageContent>;

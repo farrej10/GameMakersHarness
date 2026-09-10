@@ -4,7 +4,7 @@ Status: implemented, live-evaluated, and publicly deployed as of 2026-09-09. Off
 
 ## 1. Objective and competition strategy
 
-Convert a supported short description into one playable top-down collection/survival game. A human approves a structured specification; specialized model workers create bounded outputs; the toolkit integrates, tests, and repairs them without another human prompt during the repair loop.
+Convert a supported short description into one distinctive game from a bounded top-down action-collection family. A human approves a structured identity and mechanic specification; specialized model workers create bounded outputs; the toolkit integrates, tests, and repairs them without another human prompt during the repair loop.
 
 The supplied hackathon brief assigns 25 points to agentic engineering, 25 to harness/autonomous loops, 20 to product quality, 10 to context engineering, 10 to innovation, and 5 each to reproducibility and demo. Prioritize a working game plus inspectable, genuine recovery evidence. Agent count is not an objective.
 
@@ -21,12 +21,14 @@ Record evidence from both and identify which process each artifact demonstrates.
 | --- | --- |
 | Product interface | CLI, static HTML execution report, and loopback-only local control page |
 | Game | One 800 by 600 logical-pixel arena, scaled to fit browser |
-| Movement | WASD and arrow keys; normalized diagonal speed; player kept inside arena |
+| Movement | Standard, stamina sprint, or cooldown dash; WASD/arrows plus Shift/Space |
 | Simulation | Pure TypeScript fixed-step simulation; Phaser renders and supplies input; no physics engine |
 | Entities | One player, 3-10 collectibles, 1-4 enemies, one exit |
 | Geometry | Circular collisions; no interior walls, projectiles, doors, navigation mesh, or procedural terrain |
-| Enemy behavior | `chase` or `horizontal-patrol`; one behavior family per game |
-| Victory | `collect-all` or `collect-then-exit` |
+| Collection | Touch in any order or a declared c1..cN route |
+| Enemy behavior | `chase`, horizontal/vertical patrol, or proximity `guard`; one family per game |
+| Victory | `collect-all`, `collect-then-exit`, or timed `survive-then-exit` |
+| World identity | Open, quadrants, lanes, or perimeter layout; none, darkness, or rising-danger pressure |
 | Defeat | Health reaches zero |
 | States | `ready`, `playing`, `won`, `lost` |
 | Controls | Enter or Start button begins; R or Restart button restarts after win/loss |
@@ -37,7 +39,7 @@ Record evidence from both and identify which process each artifact demonstrates.
 | Concurrency | Up to three independent worker requests within one run; only one active build/verification process |
 | Distribution | Static production build plus a report; local generation, public static playable example |
 
-Omit countdown/power-drain mechanics even if thematic copy mentions batteries. The demo prompt must not promise a countdown. Unsupported mechanics must appear in the proposed spec's adaptations before approval.
+Unsupported mechanics must appear in the proposed spec's adaptations before approval. The spec must name its fantasy, signature mechanic, dramatic pressure, and pacing, and differ from the plain template in at least three mechanic categories.
 
 ## 3. Fixed runtime vs generated work
 
@@ -52,24 +54,25 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 1. On load, show a Start button, controls, objective, health, and score. Simulation does not advance in `ready`.
 2. On Start, state becomes `playing` and elapsed ticks start at zero.
 3. Run simulation at 60 ticks per second. Every simulation step receives exactly `1 / 60` seconds; do not use wall time inside rules.
-4. Normalize the player's input vector when its length exceeds one. Multiply by player speed in pixels per second and by the fixed step duration.
+4. Normalize the player's input vector when its length exceeds one. Standard movement uses base speed. Sprint consumes one stamina tick while moving and recharges one per inactive tick. Dash adds the declared distance in the input direction when its tick cooldown is ready.
 5. Clamp entity centers to the arena using their collision radius. Player radius is 12, enemy radius 12, collectible radius 8, exit radius 20.
 6. The logic module chooses each enemy velocity. Runtime rejects non-finite values as an error; it does not silently repair invalid policy output or normalize it for the worker.
 7. Two circles overlap when squared center distance is less than or equal to the square of the sum of their radii.
-8. Each overlapping uncollected collectible increases score by one and is removed exactly once.
+8. Touch collection removes any overlapping item. Ordered collection only accepts the next c1..cN item and cannot consume several ordered items in one tick.
 9. Enemy contact removes one health when cooldown is inactive. Apply at most one damage event per tick even if several enemies overlap. Health cannot fall below zero.
 10. Damage cooldown is exactly 60 simulation ticks. First contact at tick T can damage again at T+60. Use integer tick comparisons.
 11. After movement and collisions: apply collection, then damage, then defeat, then check victory if still alive. Defeat wins a simultaneous lethal-contact/victory tie.
-12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: victory when score reaches count AND the player overlaps the exit.
-13. A won/lost game freezes simulation. Restart creates a fresh copy of the approved generated level, resets score, health, cooldown, tick count, and input, then returns to `ready`.
-14. Rendering may animate independently, but animations must not change simulation state.
-15. In real-time mode cap the accumulated frame delta at five ticks; discard excess backlog to prevent a large movement jump after tab suspension.
+12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive-then-exit`: declared ticks elapse and player overlaps the exit.
+13. Rising-danger pressure scales enemy policy speed gradually to a maximum 1.75 multiplier. Layout changes the arena's visual structure and guides level placement.
+14. A won/lost game freezes simulation. Restart creates a fresh copy of the approved generated level, resets score, health, stamina, cooldowns, tick count, and input, then returns to `ready`.
+15. Rendering may animate independently, but animations must not change simulation state.
+16. In real-time mode cap the accumulated frame delta at five ticks; discard excess backlog to prevent a large movement jump after tab suspension.
 
 ## 5. Supported input and approval
 
 - Description length: 1-2,000 characters after trimming.
 - The spec worker proposes supported mechanics and lists adaptations in plain language.
-- Defaults: 6 collectibles, 3 health, player speed 180, 2 enemies, enemy speed 60, `chase`, `collect-then-exit`.
+- Required design choices: identity brief, movement, collection interaction, enemy policy, objective, layout, and pressure.
 - Bounds: player speed 140-220; enemy speed 40-100; health integer 2-5; counts as above.
 - A numeric request outside bounds must be explained in adaptations; do not silently clamp it.
 - Users may edit the proposed JSON locally before approval. Approval revalidates it and displays the actual rules.

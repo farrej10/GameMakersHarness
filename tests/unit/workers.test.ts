@@ -8,6 +8,7 @@ import { validateArtArtifact } from '../../src/toolkit/validate';
 import { runArtWorker } from '../../src/toolkit/workers/art';
 import { runLevelWorker } from '../../src/toolkit/workers/level';
 import { runLogicWorker } from '../../src/toolkit/workers/logic';
+import { runSpecWorker } from '../../src/toolkit/workers/spec';
 
 function json<T>(name: string): T {
   return JSON.parse(
@@ -63,11 +64,32 @@ describe('role-specific context', () => {
     expect(first.bytes).toBeLessThanOrEqual(24_000);
     expect(first.user).not.toContain('playerSpawn');
     expect(levelContext('level', spec).user).not.toContain('OPENROUTER');
-    expect(artContext('art', spec, manifest).user).not.toContain('enemyBehavior');
+    expect(artContext('art', spec, manifest).user).toContain('signatureMechanic');
+    expect(artContext('art', spec, manifest).user).not.toContain('playerSpawn');
   });
 });
 
 describe('generation workers', () => {
+  it('rejects a mechanically generic specification and requests one correction', async () => {
+    const generic = structuredClone(spec);
+    generic.player.movement = { mode: 'standard' };
+    generic.collectibles.interaction = 'touch';
+    generic.enemies.behavior = 'chase';
+    generic.objective = { mode: 'collect-all' };
+    generic.world = { layout: 'open', pressure: 'none' };
+    const model = fake([generic, spec]);
+    const result = await runSpecWorker({
+      prompt: spec.description,
+      seed: spec.seed,
+      model: common.model,
+      systemPrompt: common.systemPrompt,
+      client: model.client,
+      signal: common.signal,
+    });
+    expect(model.call).toHaveBeenCalledTimes(2);
+    expect(result.rejected[0]?.join(' ')).toContain('at least three categories');
+  });
+
   it('requests four images and normalizes them into the raster art contract', async () => {
     const png = new PNG({ width: 64, height: 64 });
     for (let y = 0; y < 64; y += 1) for (let x = 0; x < 64; x += 1) {

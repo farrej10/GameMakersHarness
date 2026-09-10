@@ -66,10 +66,17 @@ Example with all required fields:
     "palette": ["#14231D", "#376B4B", "#88C070", "#F2C14E"]
   },
   "arena": { "width": 800, "height": 600 },
-  "player": { "speed": 180, "health": 3 },
-  "collectibles": { "count": 6 },
-  "enemies": { "count": 2, "speed": 60, "behavior": "chase" },
+  "player": { "speed": 180, "health": 3, "movement": { "mode": "dash", "distance": 100, "cooldownTicks": 120 } },
+  "collectibles": { "count": 6, "interaction": "ordered" },
+  "enemies": { "count": 2, "speed": 60, "behavior": "guard" },
   "objective": { "mode": "collect-then-exit" },
+  "identity": {
+    "fantasy": "A robot restores power to a storm-damaged greenhouse.",
+    "signatureMechanic": "Dash through batteries in repair order.",
+    "dramaticPressure": "Guard machines accelerate over time.",
+    "pacing": "escalating"
+  },
+  "world": { "layout": "quadrants", "pressure": "rising-danger" },
   "adaptations": []
 }
 ```
@@ -81,6 +88,10 @@ Constraints:
 - `seed`: integer 0 through 2,147,483,647. CLI supplies 42 unless `--seed` is set; the model must echo that seed.
 - `palette`: exactly four distinct strings matching `^#[0-9A-Fa-f]{6}$`. Index 0 is background; indices 1-3 are sprite colors. Transparency is a separate pixel symbol.
 - Numeric bounds and enums are defined in SPEC section 5 and section 2.
+- Movement is `standard`, bounded `sprint`, or bounded `dash`; collection is `touch` or `ordered`.
+- Enemy behavior is chase, horizontal patrol, vertical patrol, or guard. Objectives are collect-all, collect-then-exit, or survive-then-exit with 600-3600 required survival ticks.
+- Layout is open, quadrants, lanes, or perimeter. Pressure is none, rising-danger, or darkness.
+- Identity contains bounded fantasy, signature mechanic, dramatic pressure, and pacing fields. The spec worker requires at least three material mechanic differences from the plain template.
 - `adaptations`: zero to eight strings, each 1-200 characters.
 - Controls, dimensions, radii, cooldown, simulation rate, and acceptance IDs are deterministic constants, not model-editable spec fields.
 
@@ -163,17 +174,19 @@ Exact trusted declarations:
 ```ts
 export type Vec2 = Readonly<{ x: number; y: number }>;
 export type EnemyContext = Readonly<{
-  behavior: 'chase' | 'horizontal-patrol';
+  behavior: 'chase' | 'horizontal-patrol' | 'vertical-patrol' | 'guard';
   enemy: Readonly<{ x: number; y: number; vx: number; vy: number }>;
   player: Vec2;
   speed: number;
   bounds: Readonly<{ minX: number; maxX: number; minY: number; maxY: number }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
   score: number;
   target: number;
   atExit: boolean;
+  elapsedTicks: number;
+  survivalTicks: number;
 }>;
 ```
 
@@ -181,7 +194,7 @@ Both functions implement both enum modes, even if the current spec uses only one
 
 - Chase: velocity points from enemy to player, with magnitude `speed`. Coincident positions return zero velocity. Compute Euclidean length; do not multiply both axis signs by speed.
 - Horizontal patrol: y velocity zero; initially move right if previous x velocity is zero. At or beyond maxX move left; at or below minX move right. Otherwise retain previous x direction. Magnitude is speed. Runtime clamps position after integration.
-- Victory: score >= target; additionally require atExit for `collect-then-exit`.
+- Victory: score >= target; additionally require atExit for `collect-then-exit`. Survival mode requires elapsedTicks >= survivalTicks and atExit.
 - No I/O, timers, randomness, mutation of arguments, imports of runtime values, classes, top-level side effects, or additional exports. Keep the implementation small and synchronous.
 - Tests of generated executable behavior run in Chromium, not by importing generated source into the credential-bearing Node process. Source restrictions are contract controls, not a general JavaScript security sandbox.
 

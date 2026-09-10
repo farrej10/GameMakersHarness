@@ -55,13 +55,43 @@ export function stepGame(
     inputY /= inputLength;
   }
 
+  const movement = spec.player.movement ?? { mode: 'standard' as const };
+  let speedMultiplier = 1;
+  if (movement.mode === 'sprint') {
+    const stamina = next.player.stamina ?? movement.staminaTicks;
+    if (input.sprint && stamina > 0 && inputLength > 0) {
+      speedMultiplier = movement.multiplier;
+      next.player.stamina = stamina - 1;
+    } else {
+      next.player.stamina = Math.min(movement.staminaTicks, stamina + 1);
+    }
+  }
+  if (
+    movement.mode === 'dash' &&
+    input.action &&
+    inputLength > 0 &&
+    next.tick >= (next.player.nextDashTick ?? 0)
+  ) {
+    next.player.x = clampCenter(
+      next.player.x + inputX * movement.distance,
+      PLAYER_RADIUS,
+      spec.arena.width,
+    );
+    next.player.y = clampCenter(
+      next.player.y + inputY * movement.distance,
+      PLAYER_RADIUS,
+      spec.arena.height,
+    );
+    next.player.nextDashTick = next.tick + movement.cooldownTicks;
+  }
+
   next.player.x = clampCenter(
-    next.player.x + inputX * spec.player.speed * FIXED_STEP_SECONDS,
+    next.player.x + inputX * spec.player.speed * speedMultiplier * FIXED_STEP_SECONDS,
     PLAYER_RADIUS,
     spec.arena.width,
   );
   next.player.y = clampCenter(
-    next.player.y + inputY * spec.player.speed * FIXED_STEP_SECONDS,
+    next.player.y + inputY * spec.player.speed * speedMultiplier * FIXED_STEP_SECONDS,
     PLAYER_RADIUS,
     spec.arena.height,
   );
@@ -73,7 +103,11 @@ export function stepGame(
         behavior: spec.enemies.behavior,
         enemy: { ...enemy },
         player: { x: next.player.x, y: next.player.y },
-        speed: spec.enemies.speed,
+        speed: spec.enemies.speed * (
+          spec.world?.pressure === 'rising-danger'
+            ? Math.min(1.75, 1 + next.tick / 3600)
+            : 1
+        ),
         bounds: {
           minX: ENEMY_RADIUS,
           maxX: spec.arena.width - ENEMY_RADIUS,
@@ -115,12 +149,13 @@ export function stepGame(
   }
 
   const remainingCollectibles = [];
+  const expectedCollectibleId = `c${next.score + 1}`;
   for (const collectible of next.collectibles) {
     if (
       circlesOverlap(
         { ...next.player, radius: PLAYER_RADIUS },
         { ...collectible, radius: COLLECTIBLE_RADIUS },
-      )
+      ) && (spec.collectibles.interaction !== 'ordered' || collectible.id === expectedCollectibleId)
     ) {
       next.score += 1;
     } else {
@@ -157,6 +192,10 @@ export function stepGame(
       score: next.score,
       target: spec.collectibles.count,
       atExit,
+      elapsedTicks: next.tick,
+      survivalTicks: spec.objective.mode === 'survive-then-exit'
+        ? spec.objective.survivalTicks
+        : 1200,
     });
   } catch (error) {
     return failedFrame(

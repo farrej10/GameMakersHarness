@@ -26,10 +26,12 @@ const spec: GameSpec = {
     palette: ['#101010', '#202020', '#303030', '#404040'],
   },
   arena: { width: 800, height: 600 },
-  player: { speed: 180, health: 3 },
-  collectibles: { count: 3 },
+  player: { speed: 180, health: 3, movement: { mode: 'standard' } },
+  collectibles: { count: 3, interaction: 'touch' },
   enemies: { count: 2, speed: 40, behavior: 'chase' },
   objective: { mode: 'collect-then-exit' },
+  identity: { fantasy: 'Test gameplay.', signatureMechanic: 'Collect.', dramaticPressure: 'Enemies.', pacing: 'relaxed' },
+  world: { layout: 'open', pressure: 'none' },
   adaptations: [],
 };
 
@@ -78,6 +80,56 @@ describe('collection, damage, and game states', () => {
 
     state = stepGame(state, input, rules, spec);
     expect(state.score).toBe(1);
+  });
+
+  it('requires ordered collectibles to be collected by ID sequence', () => {
+    const orderedSpec = structuredClone(spec);
+    orderedSpec.collectibles.interaction = 'ordered';
+    const orderedLevel = structuredClone(level);
+    orderedLevel.collectibles[0] = { id: 'c1', x: 500, y: 400 };
+    orderedLevel.collectibles[1] = { id: 'c2', x: 100, y: 100 };
+    let state = startGame(createInitialState(orderedSpec, orderedLevel));
+    state = stepGame(state, input, rules, orderedSpec);
+    expect(state.score).toBe(0);
+    expect(state.collectibles.map(({ id }) => id)).toContain('c2');
+    state.collectibles[0] = { id: 'c1', x: 100, y: 100 };
+    state = stepGame(state, input, rules, orderedSpec);
+    expect(state.score).toBe(1);
+  });
+
+  it('passes survival timing to the victory policy', () => {
+    const survivalSpec = structuredClone(spec);
+    survivalSpec.objective = { mode: 'survive-then-exit', survivalTicks: 600 };
+    const survivalLevel = structuredClone(level);
+    survivalLevel.playerSpawn = { ...survivalLevel.exit };
+    const survivalRules: RuleFunctions = {
+      getEnemyVelocity: () => ({ x: 0, y: 0 }),
+      isVictory: ({ mode, elapsedTicks, survivalTicks, atExit }) =>
+        mode === 'survive-then-exit' && elapsedTicks >= survivalTicks && atExit,
+    };
+    let state = startGame(createInitialState(survivalSpec, survivalLevel));
+    state.tick = 598;
+    state = stepGame(state, input, survivalRules, survivalSpec);
+    expect(state.state).toBe('playing');
+    state = stepGame(state, input, survivalRules, survivalSpec);
+    expect(state.state).toBe('won');
+  });
+
+  it('increases policy speed under rising danger with a fixed cap', () => {
+    const pressureSpec = structuredClone(spec);
+    pressureSpec.world.pressure = 'rising-danger';
+    let observedSpeed = 0;
+    const pressureRules: RuleFunctions = {
+      getEnemyVelocity: ({ speed }) => {
+        observedSpeed = speed;
+        return { x: 0, y: 0 };
+      },
+      isVictory: () => false,
+    };
+    const state = startGame(createInitialState(pressureSpec, level));
+    state.tick = 10_000;
+    stepGame(state, input, pressureRules, pressureSpec);
+    expect(observedSpeed).toBe(pressureSpec.enemies.speed * 1.75);
   });
 
   it('applies damage at tick T and again at T+60', () => {

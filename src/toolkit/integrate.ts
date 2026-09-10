@@ -7,17 +7,19 @@ import { validateArtArtifact, validateLevelArtifact, validateLogicArtifact } fro
 
 const RULE_TYPES = `export type Vec2 = Readonly<{ x: number; y: number }>;
 export type EnemyContext = Readonly<{
-  behavior: 'chase' | 'horizontal-patrol';
+  behavior: 'chase' | 'horizontal-patrol' | 'vertical-patrol' | 'guard';
   enemy: Readonly<{ x: number; y: number; vx: number; vy: number }>;
   player: Vec2;
   speed: number;
   bounds: Readonly<{ minX: number; maxX: number; minY: number; maxY: number }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
   score: number;
   target: number;
   atExit: boolean;
+  elapsedTicks: number;
+  survivalTicks: number;
 }>;
 `;
 

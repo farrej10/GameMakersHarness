@@ -34,8 +34,11 @@ const REQUIRED_ASSET_IDS = [
 const ENUM_STRINGS = new Set([
   'chase',
   'horizontal-patrol',
+  'vertical-patrol',
+  'guard',
   'collect-all',
   'collect-then-exit',
+  'survive-then-exit',
 ]);
 const ALLOWED_MATH_CALLS = new Set([
   'Math.sqrt',
@@ -86,6 +89,8 @@ const VICTORY_CONTEXT_PATHS = new Set([
   'context.score',
   'context.target',
   'context.atExit',
+  'context.elapsedTicks',
+  'context.survivalTicks',
 ]);
 
 function stringifyActual(value: unknown): string {

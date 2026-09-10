@@ -16,6 +16,21 @@ export function getEnemyVelocity(context: EnemyContext): Vec2 {
     };
   }
 
+  if (context.behavior === 'vertical-patrol') {
+    if (context.enemy.y >= context.bounds.maxY) return { x: 0, y: -context.speed };
+    if (context.enemy.y <= context.bounds.minY) return { x: 0, y: context.speed };
+    const direction = context.enemy.vy < 0 ? -1 : 1;
+    return { x: 0, y: direction * context.speed };
+  }
+
+  if (context.behavior === 'guard') {
+    const dx = context.player.x - context.enemy.x;
+    const dy = context.player.y - context.enemy.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance === 0 || distance > 180) return { x: 0, y: 0 };
+    return { x: (dx / distance) * context.speed, y: (dy / distance) * context.speed };
+  }
+
   if (context.enemy.x >= context.bounds.maxX) {
     return { x: -context.speed, y: 0 };
   }
@@ -29,6 +44,9 @@ export function getEnemyVelocity(context: EnemyContext): Vec2 {
 }
 
 export function isVictory(context: VictoryContext): boolean {
+  if (context.mode === 'survive-then-exit') {
+    return context.elapsedTicks >= context.survivalTicks && context.atExit;
+  }
   const hasTargetScore = context.score >= context.target;
   return context.mode === 'collect-all'
     ? hasTargetScore

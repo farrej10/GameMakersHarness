@@ -335,16 +335,18 @@ test('POLICY-03 generated victory policy passes both mode truth tables', async (
   const results = await page.evaluate(() => {
     const api = (globalThis as PolicyGlobal).ruleTestApi;
     return [
-      api.isVictory({ mode: 'collect-all', score: 2, target: 3, atExit: false }),
-      api.isVictory({ mode: 'collect-all', score: 3, target: 3, atExit: false }),
-      api.isVictory({ mode: 'collect-all', score: 4, target: 3, atExit: false }),
-      api.isVictory({ mode: 'collect-then-exit', score: 3, target: 3, atExit: false }),
-      api.isVictory({ mode: 'collect-then-exit', score: 2, target: 3, atExit: true }),
-      api.isVictory({ mode: 'collect-then-exit', score: 3, target: 3, atExit: true }),
-      api.isVictory({ mode: 'collect-then-exit', score: 4, target: 3, atExit: true }),
+      api.isVictory({ mode: 'collect-all', score: 2, target: 3, atExit: false, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-all', score: 3, target: 3, atExit: false, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-all', score: 4, target: 3, atExit: false, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-then-exit', score: 3, target: 3, atExit: false, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-then-exit', score: 2, target: 3, atExit: true, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-then-exit', score: 3, target: 3, atExit: true, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'collect-then-exit', score: 4, target: 3, atExit: true, elapsedTicks: 0, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'survive-then-exit', score: 0, target: 3, atExit: true, elapsedTicks: 1199, survivalTicks: 1200 }),
+      api.isVictory({ mode: 'survive-then-exit', score: 0, target: 3, atExit: true, elapsedTicks: 1200, survivalTicks: 1200 }),
     ];
   });
-  expect(results).toEqual([false, true, true, false, false, true, true]);
+  expect(results).toEqual([false, true, true, false, false, true, true, false, true]);
 });
 
 test('LEVEL-PLAY-01 bot collects an item on the actual generated level', async ({ page }) => {

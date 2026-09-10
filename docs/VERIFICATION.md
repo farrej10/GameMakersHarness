@@ -83,6 +83,7 @@ The `movement` and `collection` fixture must retain at least one uncollected ite
 | PLAY-05 | Collection fixture: hold Right for 20 ticks; c1 absent, score exactly 1; another tick cannot score c1 again | runtime |
 | PLAY-06 | Damage fixture: first tick health 2; advance 59 more ticks, still 2; one more tick, health 1 | runtime |
 | PLAY-07 | Win fixture: collect all with keyboard. collect-all becomes won; collect-then-exit stays playing until player touches exit | logic |
+| POLICY-03 | Generated victory truth table covers collection, exit, and timed survival modes | logic |
 | PLAY-08 | Loss fixture: first contact yields health 0 and lost overlay; movement no longer changes position | runtime |
 | PLAY-09 | Restart through R or button; state ready, score 0, full approved health, original generated placements, cleared input/cooldown | runtime |
 | PLAY-10 | Tie fixture: one tick results in lost, never won | runtime |

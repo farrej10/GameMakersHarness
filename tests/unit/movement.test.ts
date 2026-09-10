@@ -23,10 +23,12 @@ const spec: GameSpec = {
     palette: ['#101010', '#202020', '#303030', '#404040'],
   },
   arena: { width: 800, height: 600 },
-  player: { speed: 180, health: 3 },
-  collectibles: { count: 3 },
+  player: { speed: 180, health: 3, movement: { mode: 'standard' } },
+  collectibles: { count: 3, interaction: 'touch' },
   enemies: { count: 1, speed: 40, behavior: 'chase' },
   objective: { mode: 'collect-then-exit' },
+  identity: { fantasy: 'Test movement.', signatureMechanic: 'Move.', dramaticPressure: 'None.', pacing: 'relaxed' },
+  world: { layout: 'open', pressure: 'none' },
   adaptations: [],
 };
 
@@ -133,6 +135,28 @@ describe('deterministic movement', () => {
     };
 
     expect(run()).toEqual(run());
+  });
+
+  it('supports bounded sprint stamina and recharge', () => {
+    const sprintSpec = structuredClone(spec);
+    sprintSpec.player.movement = { mode: 'sprint', multiplier: 2, staminaTicks: 120 };
+    let state = startGame(createInitialState(sprintSpec, level));
+    state = stepGame(state, { ...noInput, right: true, sprint: true }, stationaryRules, sprintSpec);
+    expect(state.player.x).toBeCloseTo(106, 10);
+    expect(state.player.stamina).toBe(119);
+    state = stepGame(state, noInput, stationaryRules, sprintSpec);
+    expect(state.player.stamina).toBe(120);
+  });
+
+  it('supports directional dash with a deterministic cooldown', () => {
+    const dashSpec = structuredClone(spec);
+    dashSpec.player.movement = { mode: 'dash', distance: 100, cooldownTicks: 120 };
+    let state = startGame(createInitialState(dashSpec, level));
+    state = stepGame(state, { ...noInput, right: true, action: true }, stationaryRules, dashSpec);
+    expect(state.player.x).toBeCloseTo(203, 10);
+    expect(state.player.nextDashTick).toBe(121);
+    state = stepGame(state, { ...noInput, right: true, action: true }, stationaryRules, dashSpec);
+    expect(state.player.x).toBeCloseTo(206, 10);
   });
 
   it('rejects a non-finite policy result without advancing the frame', () => {

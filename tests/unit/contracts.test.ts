@@ -94,6 +94,22 @@ describe('GameSpec contract', () => {
       ]),
     );
   });
+
+  it('accepts the expanded identity and mechanic vocabulary', () => {
+    const value = structuredClone(validSpec) as Record<string, any>;
+    value.player.movement = { mode: 'dash', distance: 100, cooldownTicks: 120 };
+    value.collectibles.interaction = 'ordered';
+    value.enemies.behavior = 'guard';
+    value.objective = { mode: 'survive-then-exit', survivalTicks: 1200 };
+    value.identity = {
+      fantasy: 'A storm keeper restores a fractured circuit.',
+      signatureMechanic: 'Dash through numbered shards.',
+      dramaticPressure: 'Guardians accelerate over time.',
+      pacing: 'escalating',
+    };
+    value.world = { layout: 'quadrants', pressure: 'rising-danger' };
+    expect(validateGameSpec(value)).toBe(true);
+  });
 });
 
 describe('worker artifact contracts', () => {

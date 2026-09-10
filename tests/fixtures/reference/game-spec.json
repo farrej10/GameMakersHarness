@@ -11,9 +11,16 @@
     "palette": ["#14231D", "#376B4B", "#88C070", "#F2C14E"]
   },
   "arena": { "width": 800, "height": 600 },
-  "player": { "speed": 180, "health": 3 },
-  "collectibles": { "count": 6 },
+  "player": { "speed": 180, "health": 3, "movement": { "mode": "standard" } },
+  "collectibles": { "count": 6, "interaction": "touch" },
   "enemies": { "count": 2, "speed": 60, "behavior": "chase" },
   "objective": { "mode": "collect-then-exit" },
+  "identity": {
+    "fantasy": "A maintenance robot restores power to an abandoned greenhouse.",
+    "signatureMechanic": "Gather batteries while evading rogue machinery.",
+    "dramaticPressure": "Sprinklers pursue the robot through the growing space.",
+    "pacing": "escalating"
+  },
+  "world": { "layout": "quadrants", "pressure": "rising-danger" },
   "adaptations": []
 }

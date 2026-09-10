@@ -29,6 +29,8 @@ test('POLICY-GUARD requires normalized chase and exit-aware victory', async ({ p
         score: 3,
         target: 3,
         atExit: false,
+        elapsedTicks: 0,
+        survivalTicks: 1200,
       }),
     };
   });

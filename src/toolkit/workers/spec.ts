@@ -18,6 +18,18 @@ function validationErrors(value: unknown, seed: number): string[] {
     );
   } else if (value.seed !== seed) {
     errors.push(`/seed must equal the requested seed ${seed}; received ${value.seed}`);
+  } else {
+    const differences = [
+      value.player.movement.mode !== 'standard',
+      value.collectibles.interaction !== 'touch',
+      value.enemies.behavior !== 'chase',
+      value.objective.mode !== 'collect-all',
+      value.world.layout !== 'open',
+      value.world.pressure !== 'none',
+    ].filter(Boolean).length;
+    if (differences < 3) {
+      errors.push('/ mechanics must differ from the plain template in at least three categories');
+    }
   }
   return errors;
 }

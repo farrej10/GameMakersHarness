@@ -3,6 +3,7 @@ import type { GameScene } from './GameScene';
 
 const SCENARIO_IDS = new Set<ScenarioId>([
   'movement',
+  'dash',
   'collection',
   'damage',
   'win',
@@ -24,6 +25,9 @@ export function installDebugInterface(scene: GameScene): () => void {
   const debug: GameDebug = {
     snapshot(): GameSnapshot {
       return scene.getSnapshot();
+    },
+    visuals() {
+      return scene.getVisualState();
     },
     loadScenario(id: ScenarioId): void {
       if (!SCENARIO_IDS.has(id)) {

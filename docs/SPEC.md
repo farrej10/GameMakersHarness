@@ -29,6 +29,7 @@ Record evidence from both and identify which process each artifact demonstrates.
 | Enemy behavior | `chase`, horizontal/vertical patrol, or proximity `guard`; one family per game |
 | Victory | `collect-all`, `collect-then-exit`, or timed `survive-then-exit` |
 | World identity | Open, quadrants, lanes, or perimeter layout; none, darkness, or rising-danger pressure |
+| Animation cues | Bounded dash, damage, and collection styles, duration, color, and optional camera shake |
 | Defeat | Health reaches zero |
 | States | `ready`, `playing`, `won`, `lost` |
 | Controls | Enter or Start button begins; R or Restart button restarts after win/loss |
@@ -65,14 +66,14 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive-then-exit`: declared ticks elapse and player overlaps the exit.
 13. Rising-danger pressure scales enemy policy speed gradually to a maximum 1.75 multiplier. Layout changes the arena's visual structure and guides level placement.
 14. A won/lost game freezes simulation. Restart creates a fresh copy of the approved generated level, resets score, health, stamina, cooldowns, tick count, and input, then returns to `ready`.
-15. Rendering may animate independently, but animations must not change simulation state.
+15. Rendering derives dash, damage, and collection effects from before/after simulation snapshots. Effects expire on simulation ticks, clear on restart, and never change simulation state. Real-time camera shake is visual only.
 16. In real-time mode cap the accumulated frame delta at five ticks; discard excess backlog to prevent a large movement jump after tab suspension.
 
 ## 5. Supported input and approval
 
 - Description length: 1-2,000 characters after trimming.
 - The spec worker proposes supported mechanics and lists adaptations in plain language.
-- Required design choices: identity brief, movement, collection interaction, enemy policy, objective, layout, and pressure.
+- Required design choices: identity brief, movement, collection interaction, enemy policy, objective, layout, pressure, and animation profile.
 - Bounds: player speed 140-220; enemy speed 40-100; health integer 2-5; counts as above.
 - A numeric request outside bounds must be explained in adaptations; do not silently clamp it.
 - Users may edit the proposed JSON locally before approval. Approval revalidates it and displays the actual rules.

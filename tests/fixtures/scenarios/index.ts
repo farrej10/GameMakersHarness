@@ -59,6 +59,13 @@ export function createScenario(
         level: level(farCollectibles, [{ id: 'e1', x: 700, y: 100 }]),
         initial: {},
       };
+    case 'dash':
+      spec.player.movement = { mode: 'dash', distance: 100, cooldownTicks: 120 };
+      return {
+        spec,
+        level: level(farCollectibles, [{ id: 'e1', x: 700, y: 100 }]),
+        initial: {},
+      };
     case 'collection':
       return {
         spec,

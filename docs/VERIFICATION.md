@@ -50,6 +50,7 @@ Reference runs have their own output directory under ignored test artifacts. Ver
 | API-03 | Auth/credit/config errors fail fast; empty/refused/truncated content rejected | infrastructure |
 | PROTECT-01 | Path traversal/model-chosen filenames cannot enter writer; protected file changes fail checks | harness |
 | REPORT-01 | HTML escapes model text; failed/skipped checks cannot produce verified status | harness |
+| ANIM-CONTRACT | Animation styles, colors, durations, and camera-shake bounds validate without affecting simulation contracts | harness |
 
 Pure runtime tests receive hand-authored policy stubs. Do not import generated code in Node to run them. Mock OpenRouter via an injected `ModelClient`/fetch transport; test runs must never accidentally consume credits.
 
@@ -64,6 +65,7 @@ Named scenario fixtures may replace initial positions and approved numeric value
 Fixture constants:
 
 - `movement`: player (100,100), speed 180, health 3; collectibles and enemies away from tested path; collect-then-exit.
+- `dash`: movement fixture with a 100-pixel dash and 120-tick cooldown; used only to inspect renderer feedback around the same deterministic dash step.
 - `collection`: player (100,100), collectible c1 (160,100), remaining collectibles away; enemies away; speed 180.
 - `damage`: player and two enemies at (400,300), enemy speed 0 in trusted fixture, health 3; objective unobtainable on tested ticks. Fixture-only zero speed is allowed here, not in generated spec.
 - `win`: player (100,100), collectibles at (160,100), (220,100), (280,100), exit (400,100); stationary enemies at (700,500); speed 180; objective mode comes from selected spec. Other fixture values fixed.
@@ -87,6 +89,10 @@ The `movement` and `collection` fixture must retain at least one uncollected ite
 | PLAY-08 | Loss fixture: first contact yields health 0 and lost overlay; movement no longer changes position | runtime |
 | PLAY-09 | Restart through R or button; state ready, score 0, full approved health, original generated placements, cleared input/cooldown | runtime |
 | PLAY-10 | Tie fixture: one tick results in lost, never won | runtime |
+| ANIM-01 | Dash fixture: Space+Right performs the deterministic dash, exposes `dashing` plus `dash-trail`, then expires back to idle | runtime |
+| ANIM-02 | Damage fixture: a health decrease exposes `hurt`, invulnerability, and `damage-flash` | runtime |
+| ANIM-03 | Collection fixture: the removed collectible produces a bounded `collect-burst` | runtime |
+| ANIM-04 | Restart destroys every active renderer effect and restores idle visual state | runtime |
 | POLICY-01 | In browser evaluate current generated chase policy for cardinal, diagonal, coincident inputs; magnitude matches speed and direction toward target | logic |
 | POLICY-02 | In browser evaluate patrol at both edges and in both travel directions; y velocity 0, no speed change | logic |
 | POLICY-03 | In browser evaluate victory truth table for both modes, score below/equal/above target, and atExit true/false | logic |

@@ -22,5 +22,10 @@
     "pacing": "escalating"
   },
   "world": { "layout": "quadrants", "pressure": "rising-danger" },
+  "animationProfile": {
+    "dash": { "style": "afterimage", "durationMs": 180, "color": "#7DE2D1" },
+    "damage": { "style": "shockwave", "durationMs": 240, "color": "#FF5C5C", "cameraShake": 0.004 },
+    "collection": { "style": "spark", "durationMs": 260, "color": "#F2C14E" }
+  },
   "adaptations": []
 }

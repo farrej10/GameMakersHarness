@@ -77,6 +77,11 @@ Example with all required fields:
     "pacing": "escalating"
   },
   "world": { "layout": "quadrants", "pressure": "rising-danger" },
+  "animationProfile": {
+    "dash": { "style": "streak", "durationMs": 180, "color": "#7DE2D1" },
+    "damage": { "style": "shockwave", "durationMs": 240, "color": "#FFD166", "cameraShake": 0.004 },
+    "collection": { "style": "spark", "durationMs": 260, "color": "#FFD166" }
+  },
   "adaptations": []
 }
 ```
@@ -92,6 +97,7 @@ Constraints:
 - Enemy behavior is chase, horizontal patrol, vertical patrol, or guard. Objectives are collect-all, collect-then-exit, or survive-then-exit with 600-3600 required survival ticks.
 - Layout is open, quadrants, lanes, or perimeter. Pressure is none, rising-danger, or darkness.
 - Identity contains bounded fantasy, signature mechanic, dramatic pressure, and pacing fields. The spec worker requires at least three material mechanic differences from the plain template.
+- New generations include an animation profile. Dash style is afterimage, streak, or burst with a 120-300 ms duration. Damage style is flash, shockwave, or flicker with a 150-400 ms duration and camera shake from 0 through 0.01. Collection style is pop, spark, or pulse with a 150-500 ms duration. Each cue has a six-digit hex color. The field remains optional in schema version 1 so preserved older runs remain verifiable; the current spec worker requires it.
 - `adaptations`: zero to eight strings, each 1-200 characters.
 - Controls, dimensions, radii, cooldown, simulation rate, and acceptance IDs are deterministic constants, not model-editable spec fields.
 
@@ -215,12 +221,17 @@ type GameSnapshot = {
 
 type GameDebug = {
   snapshot(): GameSnapshot;
-  loadScenario(id: 'movement' | 'collection' | 'damage' | 'win' | 'loss' | 'tie'): void;
+  visuals(): {
+    playerAnimation: 'idle' | 'moving' | 'dashing' | 'hurt';
+    invulnerable: boolean;
+    activeEffects: Array<{ type: 'dash-trail' | 'damage-flash' | 'collect-burst'; style: string; remainingTicks: number }>;
+  };
+  loadScenario(id: 'movement' | 'dash' | 'collection' | 'damage' | 'win' | 'loss' | 'tie'): void;
   advanceTicks(count: number): void;
 };
 ```
 
-Snapshots are deep copies, not mutable runtime references. `loadScenario` selects trusted fixed data; no arbitrary object setter. `advanceTicks` requires an integer from 1 to 600 and advances the same runtime step as real-time play, using current keyboard state.
+Snapshots are deep copies, not mutable runtime references. `visuals` exposes read-only renderer evidence without inserting effects into simulation state. `loadScenario` selects trusted fixed data; no arbitrary object setter. `advanceTicks` requires an integer from 1 to 600 and advances the same runtime step as real-time play, using current keyboard state.
 
 Enable hooks only for Vite mode `test` or development. Manual stepping requires test mode AND the explicit `?clock=manual` URL parameter. Production must not expose `window.gameDebug`, and a query string alone must never enable it. The fixture loader must be excluded from production execution by the build-mode branch.
 

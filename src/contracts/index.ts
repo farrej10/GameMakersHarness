@@ -123,6 +123,36 @@ export const GameSpecSchema = closedObject({
       Type.Literal('darkness'),
     ]),
   }),
+  animationProfile: Type.Optional(closedObject({
+    dash: closedObject({
+      style: Type.Union([
+        Type.Literal('afterimage'),
+        Type.Literal('streak'),
+        Type.Literal('burst'),
+      ]),
+      durationMs: Type.Integer({ minimum: 120, maximum: 300 }),
+      color: HexColorSchema,
+    }),
+    damage: closedObject({
+      style: Type.Union([
+        Type.Literal('flash'),
+        Type.Literal('shockwave'),
+        Type.Literal('flicker'),
+      ]),
+      durationMs: Type.Integer({ minimum: 150, maximum: 400 }),
+      color: HexColorSchema,
+      cameraShake: Type.Number({ minimum: 0, maximum: 0.01 }),
+    }),
+    collection: closedObject({
+      style: Type.Union([
+        Type.Literal('pop'),
+        Type.Literal('spark'),
+        Type.Literal('pulse'),
+      ]),
+      durationMs: Type.Integer({ minimum: 150, maximum: 500 }),
+      color: HexColorSchema,
+    }),
+  })),
   adaptations: Type.Array(NonEmptyText(200), {
     minItems: 0,
     maxItems: 8,
@@ -314,8 +344,21 @@ export const GameSnapshotSchema = closedObject({
   errors: Type.Array(Type.String()),
 });
 export type GameSnapshot = Static<typeof GameSnapshotSchema>;
+export type AnimationProfile = NonNullable<GameSpec['animationProfile']>;
+export type PlayerAnimationState = 'idle' | 'moving' | 'dashing' | 'hurt';
+export type VisualEffectType = 'dash-trail' | 'damage-flash' | 'collect-burst';
+export type VisualDebugState = Readonly<{
+  playerAnimation: PlayerAnimationState;
+  invulnerable: boolean;
+  activeEffects: ReadonlyArray<Readonly<{
+    type: VisualEffectType;
+    style: string;
+    remainingTicks: number;
+  }>>;
+}>;
 export type ScenarioId =
   | 'movement'
+  | 'dash'
   | 'collection'
   | 'damage'
   | 'win'
@@ -323,6 +366,7 @@ export type ScenarioId =
   | 'tie';
 export type GameDebug = {
   snapshot(): GameSnapshot;
+  visuals(): VisualDebugState;
   loadScenario(id: ScenarioId): void;
   advanceTicks(count: number): void;
 };

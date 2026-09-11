@@ -19,6 +19,9 @@ function validationErrors(value: unknown, seed: number): string[] {
   } else if (value.seed !== seed) {
     errors.push(`/seed must equal the requested seed ${seed}; received ${value.seed}`);
   } else {
+    if (!value.animationProfile) {
+      errors.push('/animationProfile is required for newly generated games');
+    }
     const differences = [
       value.player.movement.mode !== 'standard',
       value.collectibles.interaction !== 'touch',

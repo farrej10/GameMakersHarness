@@ -110,6 +110,20 @@ describe('GameSpec contract', () => {
     value.world = { layout: 'quadrants', pressure: 'rising-danger' };
     expect(validateGameSpec(value)).toBe(true);
   });
+
+  it('rejects animation timings outside the bounded profile', () => {
+    const value = structuredClone(validSpec) as Record<string, any>;
+    value.animationProfile.dash.durationMs = 1_000;
+    expect(validateGameSpec(value)).toBe(false);
+    expect(getValidationErrors(validateGameSpec)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          instancePath: '/animationProfile/dash/durationMs',
+          keyword: 'maximum',
+        }),
+      ]),
+    );
+  });
 });
 
 describe('worker artifact contracts', () => {

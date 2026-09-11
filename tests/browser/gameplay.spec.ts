@@ -6,6 +6,7 @@ import type {
   GameSnapshot,
   RuleFunctions,
   ScenarioId,
+  VisualDebugState,
 } from '../../src/contracts/index';
 
 type DebugGlobal = typeof globalThis & { gameDebug: GameDebug };
@@ -30,6 +31,10 @@ async function openTestGame(page: Page): Promise<void> {
 
 async function snapshot(page: Page): Promise<GameSnapshot> {
   return page.evaluate(() => (globalThis as DebugGlobal).gameDebug.snapshot());
+}
+
+async function visuals(page: Page): Promise<VisualDebugState> {
+  return page.evaluate(() => (globalThis as DebugGlobal).gameDebug.visuals());
 }
 
 async function loadScenario(page: Page, id: ScenarioId): Promise<GameSnapshot> {
@@ -182,24 +187,52 @@ test('PLAY-04 player stays within all radius-adjusted boundaries', async ({ page
   expect(state.player.y).toBe(588);
 });
 
-test('PLAY-05 collection scores once and removes the item', async ({ page }) => {
+test('ANIM-01 dash exposes and renders a bounded dash animation', async ({ page }, testInfo) => {
+  await openTestGame(page);
+  const initial = await loadScenario(page, 'dash');
+  await start(page);
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('Space');
+  const dashed = await advance(page, 1);
+  await page.keyboard.up('Space');
+  await page.keyboard.up('ArrowRight');
+  expect(dashed.player.x - initial.player.x).toBeGreaterThan(100);
+  await expect.poll(async () => (await visuals(page)).playerAnimation).toBe('dashing');
+  expect((await visuals(page)).activeEffects).toEqual(
+    expect.arrayContaining([expect.objectContaining({ type: 'dash-trail' })]),
+  );
+  await capture(page, testInfo, 'dash-effect');
+  await advance(page, 20);
+  expect(await visuals(page)).toMatchObject({ playerAnimation: 'idle', activeEffects: [] });
+});
+
+test('PLAY-05 and ANIM-03 collection scores once and produces its effect', async ({ page }) => {
   await openTestGame(page);
   await loadScenario(page, 'collection');
   await start(page);
   let state = await holdForTicks(page, 'ArrowRight', 20);
   expect(state.score).toBe(1);
   expect(state.collectibles.map(({ id }) => id)).not.toContain('c1');
+  expect((await visuals(page)).activeEffects).toEqual(
+    expect.arrayContaining([expect.objectContaining({ type: 'collect-burst' })]),
+  );
   state = await advance(page, 1);
   expect(state.score).toBe(1);
 });
 
-test('PLAY-06 damage observes its exact 60-tick cooldown', async ({ page }) => {
+test('PLAY-06 and ANIM-02 damage observes cooldown and hurt feedback', async ({ page }, testInfo) => {
   await openTestGame(page);
   await loadScenario(page, 'damage');
   await start(page);
   let state = await advance(page, 1);
   expect(state.player.health).toBe(2);
   expect(state.player.nextDamageTick).toBe(61);
+  expect(await visuals(page)).toMatchObject({
+    playerAnimation: 'hurt',
+    invulnerable: true,
+    activeEffects: [expect.objectContaining({ type: 'damage-flash' })],
+  });
+  await capture(page, testInfo, 'damage-effect');
   state = await advance(page, 59);
   expect(state.player.health).toBe(2);
   state = await advance(page, 1);
@@ -259,6 +292,20 @@ test('PLAY-09 restart restores the selected scenario', async ({ page }) => {
     right: false,
   });
   expect(Object.values(restarted.input).every((pressed) => pressed === false)).toBe(true);
+});
+
+test('ANIM-04 restart clears active visual effects', async ({ page }) => {
+  await openTestGame(page);
+  await loadScenario(page, 'loss');
+  await start(page);
+  await advance(page, 1);
+  expect((await visuals(page)).activeEffects.length).toBeGreaterThan(0);
+  await page.getByTestId('restart-button').click();
+  expect(await visuals(page)).toMatchObject({
+    playerAnimation: 'idle',
+    invulnerable: false,
+    activeEffects: [],
+  });
 });
 
 test('PLAY-10 lethal contact wins a simultaneous victory tie', async ({ page }) => {

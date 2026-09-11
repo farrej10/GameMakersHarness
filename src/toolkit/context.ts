@@ -101,6 +101,7 @@ export function artContext(
       collection: spec.collectibles.interaction,
       enemyBehavior: spec.enemies.behavior,
       objective: spec.objective,
+      animationProfile: spec.animationProfile,
     },
     manifest,
     constraints: {

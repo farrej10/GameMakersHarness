@@ -264,11 +264,12 @@ function makeCheck(
 
 export function classifyBrowserFailure(output: string): { id: string; owner: CheckResult['owner'] } {
   const id = output.match(
-    /^\s*x\s+\d+[^\r\n]*?\b(POLICY-GUARD|LEVEL-PLAY-\d+|PLAY-\d+|POLICY-\d+|PROD-\d+)/mu,
-  )?.[1] ?? output.match(/(?:LEVEL-PLAY|PLAY|POLICY|PROD)-\d+/u)?.[0] ??
+    /^\s*x\s+\d+[^\r\n]*?\b(POLICY-GUARD|LEVEL-PLAY-\d+|PLAY-\d+|ANIM-\d+|POLICY-\d+|PROD-\d+)/mu,
+  )?.[1] ?? output.match(/(?:LEVEL-PLAY|PLAY|ANIM|POLICY|PROD)-\d+/u)?.[0] ??
     (output.includes('POLICY-GUARD') ? 'POLICY-GUARD' : 'BROWSER-SUITE');
   if (id.startsWith('POLICY') || id === 'PLAY-07') return { id, owner: 'logic' };
   if (id.startsWith('LEVEL')) return { id, owner: 'level' };
+  if (id.startsWith('ANIM')) return { id, owner: 'runtime' };
   if (id === 'PLAY-01') return { id, owner: 'runtime' };
   if (/(?:failed request|404).*(?:asset|png)|(?:asset|png).*(?:failed request|404)/iu.test(output)) {
     return { id, owner: 'art' };

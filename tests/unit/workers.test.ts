@@ -65,7 +65,24 @@ describe('role-specific context', () => {
     expect(first.user).not.toContain('playerSpawn');
     expect(levelContext('level', spec).user).not.toContain('OPENROUTER');
     expect(artContext('art', spec, manifest).user).toContain('signatureMechanic');
+    expect(artContext('art', spec, manifest).user).toContain('animationProfile');
     expect(artContext('art', spec, manifest).user).not.toContain('playerSpawn');
+  });
+
+  it('requires an animation profile from newly generated specifications', async () => {
+    const withoutAnimations = structuredClone(spec);
+    delete withoutAnimations.animationProfile;
+    const model = fake([withoutAnimations, spec]);
+    const result = await runSpecWorker({
+      prompt: spec.description,
+      seed: spec.seed,
+      model: common.model,
+      systemPrompt: common.systemPrompt,
+      client: model.client,
+      signal: common.signal,
+    });
+    expect(model.call).toHaveBeenCalledTimes(2);
+    expect(result.rejected[0]?.join(' ')).toContain('animationProfile is required');
   });
 });
 

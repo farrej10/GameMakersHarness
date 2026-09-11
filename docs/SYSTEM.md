@@ -133,10 +133,10 @@ Each call gets the role prompt, output schema, a compact task packet, and no pre
 
 | Role | Include | Exclude |
 | --- | --- | --- |
-| Spec | Original description, seed, supported capabilities, defaults and bounds | Source repository, worker logs, credentials |
+| Spec | Original description, seed, supported capabilities, defaults, mechanic bounds, and animation-profile bounds | Source repository, worker logs, credentials |
 | Logic | Approved mechanics, exact type declarations, two behavior truth tables, example module skeleton | Art grids, full level coordinates, original conversation |
 | Level | Counts, seed, arena, distances, quadrant constraint, one valid coordinate example | Game source, API settings, art |
-| Art | Identity, entity names, palette, signature mechanic, 64 by 64 sprite constraints, and one entity per request | Logic source, tests, level coordinates |
+| Art | Identity, entity names, palette, signature mechanic, animation profile, 64 by 64 sprite constraints, and one entity per request | Logic source, tests, level coordinates |
 | Repair | Current owner artifact, relevant contract, approved spec subset, first 3 failures for that owner, relevant text logs, prior rejected-repair errors, and a complete valid low-complexity example for logic | Other workers' histories, unrelated source, credentials |
 
 Preserve the context packet and its SHA-256 alongside the response. Store full sanitized logs locally, but send at most 8,000 bytes of failure excerpts with filenames and line numbers. Keep the contract and actual failure ahead of optional examples when reducing context. If required context still exceeds the limit, stop with `CONTEXT_LIMIT`; never silently remove the contract.

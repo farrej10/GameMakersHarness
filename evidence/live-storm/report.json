@@ -1,0 +1,361 @@
+{
+  "approvalHash": "f529eb7d2b12f48b317b5192d602687eae4fd3c606c98e0fbd7508d3d9c56e01",
+  "artSource": "generated",
+  "playableBuild": "build/index.html",
+  "prompt": "A storm courier dashes between four numbered lightning shrines while stone sentinels guard the routes. Survive the growing tempest, then escape through a grounded arch. Use a divided ritual arena and electric teal and gold pixel art.\n",
+  "provenance": "injected-fault",
+  "repairEvidence": [
+    {
+      "after": [
+        "evidence/attempt-1/after/logic.json"
+      ],
+      "attempt": 1,
+      "before": [
+        "evidence/attempt-1/before/logic.json"
+      ],
+      "diff": "evidence/attempt-1/change.diff"
+    }
+  ],
+  "reportedCostUsd": 0.15576089,
+  "requestCount": 9,
+  "requests": [
+    {
+      "completionTokens": 1290,
+      "contextSha256": "8a0377561c0de6dd4f311724e080d15f527f95c812d28408441bbd0f55a26eff",
+      "elapsedMs": 7019,
+      "promptTokens": 339,
+      "provider": null,
+      "reportedCostUsd": 0.0388017,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_collectible",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "8a0377561c0de6dd4f311724e080d15f527f95c812d28408441bbd0f55a26eff",
+      "elapsedMs": 7315,
+      "promptTokens": 339,
+      "provider": null,
+      "reportedCostUsd": 0.0388017,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_enemy",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "8a0377561c0de6dd4f311724e080d15f527f95c812d28408441bbd0f55a26eff",
+      "elapsedMs": 6579,
+      "promptTokens": 340,
+      "provider": null,
+      "reportedCostUsd": 0.038802,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_exit",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 1290,
+      "contextSha256": "8a0377561c0de6dd4f311724e080d15f527f95c812d28408441bbd0f55a26eff",
+      "elapsedMs": 6452,
+      "promptTokens": 339,
+      "provider": null,
+      "reportedCostUsd": 0.0388017,
+      "requestedModel": "google/gemini-2.5-flash-image",
+      "requestId": "art_player",
+      "returnedModel": "google/gemini-2.5-flash-image",
+      "role": "art"
+    },
+    {
+      "completionTokens": 511,
+      "contextSha256": "98af453392c27a7d959acf628ee89b153f4dd99be008e874c2509f367cbde498",
+      "elapsedMs": 5379,
+      "promptTokens": 1109,
+      "provider": "Darkbloom",
+      "reportedCostUsd": 0.00007328,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "level_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "level"
+    },
+    {
+      "completionTokens": 875,
+      "contextSha256": "ee9e1aa30d551c4d08816a73bbca4eb8c1ff639b8cfe4e5a08d593aced7c9997",
+      "elapsedMs": 10028,
+      "promptTokens": 884,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00015713,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "level_1",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "level"
+    },
+    {
+      "completionTokens": 462,
+      "contextSha256": "e7ab4e33803e3f0323e65792a8a8497aafbd6af85b8d199954515d504d4f4352",
+      "elapsedMs": 2826,
+      "promptTokens": 933,
+      "provider": "CoreWeave",
+      "reportedCostUsd": 0.00008805,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "logic_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "logic"
+    },
+    {
+      "completionTokens": 508,
+      "contextSha256": "dd9a2ff9e1aa8fe4f8e08b2e1a5413f94196c05c2846a0d3217f22178568e8fd",
+      "elapsedMs": 10659,
+      "promptTokens": 3884,
+      "provider": "Darkbloom",
+      "reportedCostUsd": 0.00012848,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "repair_1",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "repair"
+    },
+    {
+      "completionTokens": 557,
+      "contextSha256": null,
+      "elapsedMs": 6373,
+      "promptTokens": 798,
+      "provider": "Parasail",
+      "reportedCostUsd": 0.00010685,
+      "requestedModel": "openai/gpt-oss-20b",
+      "requestId": "spec_0",
+      "returnedModel": "openai/gpt-oss-20b",
+      "role": "spec"
+    }
+  ],
+  "runId": "20260911T202329Z-7ce1108f",
+  "schemaVersion": 1,
+  "spec": {
+    "adaptations": [],
+    "arena": {
+      "height": 600,
+      "width": 800
+    },
+    "collectibles": {
+      "count": 4,
+      "interaction": "ordered"
+    },
+    "description": "A storm courier dashes between four numbered lightning shrines while stone sentinels guard the routes. Survive the growing tempest, then escape through a grounded arch. Use a divided ritual arena and electric teal and gold pixel art.",
+    "enemies": {
+      "behavior": "guard",
+      "count": 2,
+      "speed": 70
+    },
+    "identity": {
+      "dramaticPressure": "Temporal tempest intensifies while guards watch.",
+      "fantasy": "A courier battles a storm to deliver lightning shrines, guided by the pulse of a ritual arena.",
+      "pacing": "escalating",
+      "signatureMechanic": "Dash between numbered shrines, completing them in sequence."
+    },
+    "objective": {
+      "mode": "survive-then-exit",
+      "survivalTicks": 1800
+    },
+    "player": {
+      "health": 4,
+      "movement": {
+        "cooldownTicks": 120,
+        "distance": 100,
+        "mode": "dash"
+      },
+      "speed": 160
+    },
+    "schemaVersion": 1,
+    "seed": 77,
+    "theme": {
+      "collectibleName": "Lightning Shrine",
+      "enemyName": "Stone Sentinel",
+      "exitName": "Grounded Arch",
+      "palette": [
+        "#003366",
+        "#FFCC00",
+        "#00FFD5",
+        "#FFFFFF"
+      ],
+      "playerName": "Storm Courier"
+    },
+    "title": "Storm Courier",
+    "world": {
+      "layout": "lanes",
+      "pressure": "rising-danger"
+    }
+  },
+  "status": {
+    "activeElapsedMs": 85465,
+    "message": null,
+    "reasonCode": null,
+    "requestCount": 9,
+    "runId": "20260911T202329Z-7ce1108f",
+    "schemaVersion": 1,
+    "state": "verified"
+  },
+  "verification": {
+    "attempt": 1,
+    "checks": [
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no contract or semantic failures",
+        "id": "CONTRACTS",
+        "message": "Selected spec, level, art, and logic satisfy their contracts.",
+        "owner": "harness",
+        "stage": "contracts",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "evidence/protected-baseline.json"
+        ],
+        "expected": "no added, changed, or deleted protected files",
+        "id": "PROTECT-01",
+        "message": "Protected files match the trusted baseline.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/type-repository.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-REPOSITORY",
+        "message": "TYPE-REPOSITORY completed successfully.",
+        "owner": "harness",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/type-generated.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "TYPE-GENERATED",
+        "message": "TYPE-GENERATED completed successfully.",
+        "owner": "logic",
+        "stage": "types",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/unit-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "UNIT-SUITE",
+        "message": "UNIT-SUITE completed successfully.",
+        "owner": "harness",
+        "stage": "unit",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/build-test.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-TEST",
+        "message": "BUILD-TEST completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/build-production.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BUILD-PRODUCTION",
+        "message": "BUILD-PRODUCTION completed successfully.",
+        "owner": "harness",
+        "stage": "build",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [
+          "build"
+        ],
+        "expected": "four valid 64 by 64 production PNG assets",
+        "id": "ASSET-01",
+        "message": "All manifest assets decode as visible 64 by 64 PNGs.",
+        "owner": "art",
+        "stage": "assets",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/browser-suite.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "BROWSER-SUITE",
+        "message": "BROWSER-SUITE completed successfully.",
+        "owner": "runtime",
+        "stage": "browser",
+        "status": "passed"
+      },
+      {
+        "actual": "exit code 0",
+        "artifactPaths": [
+          "evidence/attempt-1/logs/prod-01.txt"
+        ],
+        "expected": "exit code 0 before timeout",
+        "id": "PROD-01",
+        "message": "PROD-01 completed successfully.",
+        "owner": "harness",
+        "stage": "production",
+        "status": "passed"
+      },
+      {
+        "actual": null,
+        "artifactPaths": [],
+        "expected": "no changes during verification",
+        "id": "PROTECT-POST",
+        "message": "Verification left protected files unchanged.",
+        "owner": "harness",
+        "stage": "protected",
+        "status": "passed"
+      }
+    ],
+    "finishedAt": "2026-09-11T20:25:12.468Z",
+    "runId": "20260911T202329Z-7ce1108f",
+    "schemaVersion": 1,
+    "startedAt": "2026-09-11T20:24:50.527Z",
+    "status": "passed"
+  },
+  "workerIntervals": [
+    {
+      "finishedAt": "2026-09-11T20:23:35.429Z",
+      "role": "spec",
+      "startedAt": "2026-09-11T20:23:29.034Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-11T20:23:56.344Z",
+      "role": "logic",
+      "startedAt": "2026-09-11T20:23:53.428Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-11T20:24:08.880Z",
+      "role": "level",
+      "startedAt": "2026-09-11T20:23:53.463Z",
+      "status": "completed"
+    },
+    {
+      "finishedAt": "2026-09-11T20:24:21.026Z",
+      "role": "art",
+      "startedAt": "2026-09-11T20:23:53.467Z",
+      "status": "completed"
+    }
+  ]
+}

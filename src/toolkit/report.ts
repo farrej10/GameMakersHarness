@@ -192,9 +192,11 @@ export function generateExecutionReport(
   const knownCosts = requests
     .map(({ reportedCostUsd }) => reportedCostUsd)
     .filter((value): value is number => value !== null);
-  const inferredProvenance = requests.some(({ provider }) => provider === 'fixture')
-    ? 'fixture'
-    : 'live';
+  const inferredProvenance = events.some(({ type }) => type === 'demo.fault.injected')
+    ? 'injected-fault'
+    : requests.some(({ provider }) => provider === 'fixture')
+      ? 'fixture'
+      : 'live';
   const verified = status.state === 'verified' &&
     verification?.status === 'passed' &&
     verification.checks.every(({ status: checkStatus }) => checkStatus === 'passed');

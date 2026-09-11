@@ -15,7 +15,7 @@ try {
   const links = await landing.locator('a[href]').evaluateAll((elements) =>
     elements.map((element) => element.href),
   );
-  if (landingFailures.length || links.length !== 2) {
+  if (landingFailures.length || links.length !== 3) {
     throw new Error(`Landing check failed: ${landingFailures.length} failed requests, ${links.length} game links.`);
   }
   console.log(`PASS landing ${landing.url()}`);

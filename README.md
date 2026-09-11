@@ -2,7 +2,7 @@
 
 Agentic Game Maker converts a short description into a playable game from a bounded top-down action-collection family. Specialized OpenRouter workers choose a game identity and compatible movement, collection, threat, objective, layout, and pressure mechanics; trusted code validates and integrates their rules, level, and pixel art, runs browser gameplay tests, and performs at most three owner-routed repair attempts without another human prompt.
 
-The deterministic runtime, validation harness, orchestrator, repair loop, reports, CLI, and local control page are implemented. Two distinct live OpenRouter games pass the complete harness and are exported under `release/`; repository publication, public deployment, human full-level playthroughs, and the final video remain release gates.
+The deterministic runtime, validation harness, orchestrator, repair loop, reports, CLI, and local control page are implemented. Three distinct live OpenRouter games pass the complete harness and are exported under `release/`; Storm Courier also records a complete model-driven failure, repair, and passing rerun. Human full-level playthroughs and the final video remain release gates.
 
 ## Requirements
 
@@ -65,6 +65,14 @@ Generate, integrate, verify, and autonomously repair eligible generated-artifact
 npm.cmd run game:generate -- --run <run-id>
 ```
 
+For a repeatable, transparently labeled demonstration of the same repair path, inject a valid but incorrect victory policy after preserving the original logic:
+
+```powershell
+npm.cmd run game:generate -- --run <run-id> --demo-fault logic-victory
+```
+
+The real browser harness must fail, the configured OpenRouter repair model receives the owned failure and current artifact, and the full harness must pass before the run is marked verified. Reports label this provenance as `injected-fault`.
+
 Inspect `runs/<run-id>/report.html`. A verified run has a self-contained static build under `runs/<run-id>/build/`. Serve it locally with:
 
 ```powershell
@@ -81,7 +89,7 @@ Generated games can combine standard, stamina sprint, or cooldown dash movement;
 npm.cmd run control
 ```
 
-Open `http://127.0.0.1:4300`. The page supports description entry, spec review, exact approval, generation progress, report access, and verified-game preview. Mutations require the loopback page origin. The game runs on a separate static origin, and credentials stay in the Node process.
+Open `http://127.0.0.1:4300`. The page shows the proposed fantasy and mechanic choices, exact spec approval, live logic/level/art and repair states, report access, and a verified-game preview. Its optional “Demonstrate autonomous repair” checkbox enables the labeled fault above. Mutations require the loopback page origin. The game runs on a separate static origin, and credentials stay in the Node process.
 
 ## Important directories
 
@@ -99,8 +107,8 @@ Open `http://127.0.0.1:4300`. The page supports description entry, spec review, 
 - Offline reference verification passes.
 - Unit and integration tests demonstrate overlapping worker calls, fixed-path integration, approval invalidation, art fallback, protected-file detection, and a bounded autonomous logic repair.
 - A real implementation failure and repair is recorded in `docs/AI-DEV-LOG.md`.
-- Live OpenRouter runs `20260909T211322Z-64f94916` and `20260909T211338Z-c0505a5e` use generated 64 by 64 image art and pass every verification stage; curated artifacts are under `evidence/live-greenhouse/` and `evidence/live-moon/`.
-- `release/` contains a static two-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
+- Live OpenRouter runs `20260909T211322Z-64f94916`, `20260909T211338Z-c0505a5e`, and `20260911T202329Z-7ce1108f` use generated 64 by 64 image art and pass every verification stage. Storm’s curated report records the injected `PLAY-07` failure, one model repair, and the passing rerun under `evidence/live-storm/`.
+- `release/` contains a static three-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
 - Public playable site: <https://farrej10.github.io/GameMakersHarness/>. Verify the deployed landing page and both games with `npm.cmd run check:public -- https://farrej10.github.io/GameMakersHarness/`.
 - A clean clone of release commit `8e19f60` completed `npm.cmd ci` with 0 vulnerabilities and passed the full verifier; see `evidence/REPRODUCTION.md`.
 - Human full-level playthroughs and the final three-minute video remain pending.

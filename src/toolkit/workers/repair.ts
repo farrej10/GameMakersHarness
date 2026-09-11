@@ -15,6 +15,8 @@ import {
 } from '../../contracts/index';
 import type { ModelClient, ModelRequest, ModelResult } from '../openrouter';
 import { validateArtArtifact, validateLevelArtifact, validateLogicArtifact } from '../validate';
+import { normalizeLogicOutput } from './logic';
+import { logicContext } from '../context';
 
 export type RepairOwner = 'logic' | 'level' | 'art';
 export type OwnerArtifact = LogicOutput | LevelOutput | ArtOutput;
@@ -76,7 +78,13 @@ export async function runRepairWorker(options: {
   systemPrompt: string;
   client: ModelClient;
   signal: AbortSignal;
+  previousRepairErrors?: readonly string[];
 }): Promise<RepairWorkerResult> {
+  const validLogicExample = options.owner === 'logic'
+    ? (JSON.parse(logicContext('', options.spec).user) as {
+        completeValidExample: { source: string };
+      }).completeValidExample.source
+    : null;
   const user = JSON.stringify({
     task: `Diagnose the listed ${options.owner} failures and return one complete replacement.`,
     owner: options.owner,
@@ -88,11 +96,36 @@ export async function runRepairWorker(options: {
       arena: options.spec.arena,
       palette: options.spec.theme.palette,
     },
+    ownerContract: options.owner === 'logic'
+      ? {
+          exactImport: "import type { EnemyContext, VictoryContext, Vec2 } from './rule-types';",
+          exactExports: [
+            'getEnemyVelocity(context: EnemyContext): Vec2',
+            'isVictory(context: VictoryContext): boolean',
+          ],
+          victoryContextFields: [
+            'context.mode',
+            'context.score',
+            'context.target',
+            'context.atExit',
+            'context.elapsedTicks',
+            'context.survivalTicks',
+          ],
+          victoryRules: {
+            'collect-all': 'context.score >= context.target',
+            'collect-then-exit': 'context.score >= context.target && context.atExit',
+            'survive-then-exit': 'context.elapsedTicks >= context.survivalTicks && context.atExit',
+          },
+          completeValidModule: validLogicExample,
+          instruction: 'Use the complete valid module as the syntax pattern. Preserve valid enemy behavior. Do not add helpers, switch statements, destructuring, comments, or undeclared fields. Return exactly the import and two exported functions.',
+        }
+      : null,
     currentArtifact: options.current,
     failures: options.failures.slice(0, 3).map(
       ({ id, message, expected, actual }) => ({ id, message, expected, actual }),
     ),
     logExcerpt: options.logExcerpt.slice(0, 8_000),
+    previousRepairErrors: options.previousRepairErrors ?? [],
   });
   if (Buffer.byteLength(options.systemPrompt) + Buffer.byteLength(user) > 24_000) {
     throw new Error('CONTEXT_LIMIT: repair packet exceeds 24000 bytes.');
@@ -115,7 +148,9 @@ export async function runRepairWorker(options: {
       result,
     );
   }
-  const output = result.content.output;
+  const output = options.owner === 'logic'
+    ? normalizeLogicOutput(result.content.output) as OwnerArtifact
+    : result.content.output;
   const semanticIssues = options.owner === 'logic'
     ? validateLogicArtifact(output)
     : options.owner === 'level'

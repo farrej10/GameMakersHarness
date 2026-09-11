@@ -252,12 +252,13 @@ test('PLAY-09 restart restores the selected scenario', async ({ page }) => {
   expect(restarted.player.x).toBe(initial.player.x);
   expect(restarted.player.y).toBe(initial.player.y);
   expect(restarted.collectibles).toEqual(initial.collectibles);
-  expect(restarted.input).toEqual({
+  expect(restarted.input).toMatchObject({
     up: false,
     down: false,
     left: false,
     right: false,
   });
+  expect(Object.values(restarted.input).every((pressed) => pressed === false)).toBe(true);
 });
 
 test('PLAY-10 lethal contact wins a simultaneous victory tie', async ({ page }) => {

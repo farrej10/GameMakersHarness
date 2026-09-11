@@ -469,6 +469,15 @@ export const RunEventSchema = Type.Union([
   ),
   eventSchema('art.fallback', closedObject({ reason: NonEmptyText(1_000) })),
   eventSchema(
+    'demo.fault.injected',
+    closedObject({
+      owner: Type.Literal('logic'),
+      fault: Type.Literal('logic-victory'),
+      originalPath: RelativeArtifactPath,
+      injectedPath: RelativeArtifactPath,
+    }),
+  ),
+  eventSchema(
     'integration.completed',
     closedObject({ integrationPath: RelativeArtifactPath }),
   ),

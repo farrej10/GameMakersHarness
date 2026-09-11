@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260911T202329Z-7ce1108f",
+  "attempt": 0,
+  "startedAt": "2026-09-11T20:24:21.168Z",
+  "finishedAt": "2026-09-11T20:24:39.703Z",
+  "status": "failed",
+  "checks": [
+    {
+      "id": "CONTRACTS",
+      "stage": "contracts",
+      "status": "passed",
+      "owner": "harness",
+      "message": "Selected spec, level, art, and logic satisfy their contracts.",
+      "expected": "no contract or semantic failures",
+      "actual": null,
+      "artifactPaths": []
+    },
+    {
+      "id": "PROTECT-01",
+      "stage": "protected",
+      "status": "passed",
+      "owner": "harness",
+      "message": "Protected files match the trusted baseline.",
+      "expected": "no added, changed, or deleted protected files",
+      "actual": null,
+      "artifactPaths": [
+        "evidence/protected-baseline.json"
+      ]
+    },
+    {
+      "id": "TYPE-REPOSITORY",
+      "stage": "types",
+      "status": "passed",
+      "owner": "harness",
+      "message": "TYPE-REPOSITORY completed successfully.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 0",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/type-repository.txt"
+      ]
+    },
+    {
+      "id": "TYPE-GENERATED",
+      "stage": "types",
+      "status": "passed",
+      "owner": "logic",
+      "message": "TYPE-GENERATED completed successfully.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 0",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/type-generated.txt"
+      ]
+    },
+    {
+      "id": "UNIT-SUITE",
+      "stage": "unit",
+      "status": "passed",
+      "owner": "harness",
+      "message": "UNIT-SUITE completed successfully.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 0",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/unit-suite.txt"
+      ]
+    },
+    {
+      "id": "BUILD-TEST",
+      "stage": "build",
+      "status": "passed",
+      "owner": "harness",
+      "message": "BUILD-TEST completed successfully.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 0",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/build-test.txt"
+      ]
+    },
+    {
+      "id": "BUILD-PRODUCTION",
+      "stage": "build",
+      "status": "passed",
+      "owner": "harness",
+      "message": "BUILD-PRODUCTION completed successfully.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 0",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/build-production.txt"
+      ]
+    },
+    {
+      "id": "ASSET-01",
+      "stage": "assets",
+      "status": "passed",
+      "owner": "art",
+      "message": "All manifest assets decode as visible 64 by 64 PNGs.",
+      "expected": "four valid 64 by 64 production PNG assets",
+      "actual": null,
+      "artifactPaths": [
+        "build"
+      ]
+    },
+    {
+      "id": "PLAY-07",
+      "stage": "browser",
+      "status": "failed",
+      "owner": "logic",
+      "message": "BROWSER-SUITE failed; inspect its captured log.",
+      "expected": "exit code 0 before timeout",
+      "actual": "exit code 1",
+      "artifactPaths": [
+        "evidence/attempt-0/logs/browser-suite.txt"
+      ]
+    },
+    {
+      "id": "PROD-01",
+      "stage": "production",
+      "status": "skipped",
+      "owner": "harness",
+      "message": "Skipped because a prerequisite stage failed.",
+      "expected": null,
+      "actual": null,
+      "artifactPaths": []
+    },
+    {
+      "id": "PROTECT-POST",
+      "stage": "protected",
+      "status": "passed",
+      "owner": "harness",
+      "message": "Verification left protected files unchanged.",
+      "expected": "no changes during verification",
+      "actual": null,
+      "artifactPaths": []
+    }
+  ]
+}

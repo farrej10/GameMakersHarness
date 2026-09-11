@@ -39,9 +39,9 @@ The reference verifier passed contracts, protected-file checks, repository and s
 | --- | --- | --- |
 | G1 Reference game and offline harness | Passed | `evidence/reference/verify.json` |
 | G2 Live OpenRouter generation | Passed | `evidence/live-greenhouse/`, `evidence/live-moon/` |
-| G3 Controls and bounded recovery | Passed in tests | `tests/integration/orchestrator.test.ts` |
-| G4 Genuine autonomous repair evidence | Passed for toolkit implementation | Implementation repair entry above |
-| G5 Two live examples, export, reproduction, public link | Partial | Two verified live examples, clean reproduction, repository, and public Pages URL pass; human full-level checks pending |
+| G3 Controls and bounded recovery | Passed live and in tests | `evidence/live-storm/`, `tests/integration/orchestrator.test.ts` |
+| G4 Genuine autonomous repair evidence | Passed for toolkit implementation and live model repair | Implementation repair entry above; `evidence/AUTONOMOUS-REPAIR.md` |
+| G5 Three live examples, export, reproduction, public link | Partial | Three verified live examples, clean reproduction, repository, and public Pages URL pass; human full-level checks pending |
 | G6 Submission and video | Pending | `docs/DEMO.md` remains the recording/submission checklist |
 
 Live model output and passing verification are recorded. Public deployment, human full-level completion, final video, and submission are not yet claimed.
@@ -55,3 +55,15 @@ The doctor confirmed `openai/gpt-oss-20b` advertises structured-output support. 
 Run `20260909T172814Z-3cb38f89` then reached the browser harness. Thirteen of fourteen scenarios passed. PLAY-01 failed because the trusted test expected the reference title `Greenhouse Rescue` instead of the active approved title `Greenhouse Repair`. The existing classifier incorrectly routed this runtime assertion to art, so three bounded art repairs could not affect the failure. The agent preserved the run, changed PLAY-01 to derive title, score target, and health from the active spec, fixed ownership classification, and reran the complete reference harness. It passed all stages with 120 unit/integration tests and 14 browser scenarios.
 
 Fresh live runs `20260909T211322Z-64f94916` and `20260909T211338Z-c0505a5e` passed all eleven verification stages with image-generated 64 by 64 sprites. Their worker timelines show logic and level running alongside the four-request art workstream. The games differ in theme, objective, collection count, enemy policy, level, palette, and generated sprites. Evidence is curated under `evidence/live-recovery/`, `evidence/live-greenhouse/`, and `evidence/live-moon/`.
+
+## 2026-09-11 — Expanded games, observable coordination, and live repair
+
+Provenance: implementation plus credentialed, labeled fault-injection run.
+
+The game contract was expanded with standard, sprint, and dash movement; touch and ordered collection; chase, two patrol axes, and guard behavior; three objective modes; four layouts; two pressure systems; and an explicit fantasy, signature mechanic, pacing, and dramatic-pressure brief. The art role now makes four independent image requests and trusted code normalizes each result to a transparent 64 by 64 sprite. The control page displays this mechanic summary and polls actual logic, level, art, and repair states.
+
+The orchestrator now enforces `parallelWorkers` with a bounded scheduler and emits each completion event when that worker settles. In Storm run `20260911T202329Z-7ce1108f`, logic, level, and art began within 39 ms; logic finished in 2.916 s, level finished after one contract correction in 15.417 s, and art finished in 27.559 s. This establishes real overlap and shows art as the critical path.
+
+Development runs exposed two harness defects without a new human prompt. First, browser-failure classification matched an earlier passing `PLAY-01` line instead of the failed `PLAY-07`; the classifier was changed to prefer Playwright's failed-test marker and covered by an integration test. Second, restart assertions assumed the original four-key input shape even when expanded mechanics added optional action keys; the assertion now verifies mandatory directions and that every present input is released. The complete reference verifier then passed.
+
+For the final demonstration, `--demo-fault logic-victory` preserved the generated logic and injected an exit-unaware victory policy. Attempt 0 failed `PLAY-07`. The orchestrator routed the failure to logic; a real `openai/gpt-oss-20b` repair call restored the three objective cases; and attempt 1 passed all eleven stages, including 131 unit/integration tests and 14 browser scenarios. No human prompt occurred during generation, failure classification, repair, reintegration, or the passing rerun. The report labels the run `injected-fault`, and original/injected logic, before/after artifacts, diff, failed verification, passing verification, events, and screenshots are preserved under `evidence/live-storm/`.

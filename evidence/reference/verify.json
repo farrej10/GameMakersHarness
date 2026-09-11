@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "runId": "reference",
   "attempt": 0,
-  "startedAt": "2026-09-09T17:45:09.685Z",
-  "finishedAt": "2026-09-09T17:45:31.092Z",
+  "startedAt": "2026-09-11T20:32:32.064Z",
+  "finishedAt": "2026-09-11T20:32:54.454Z",
   "status": "passed",
   "checks": [
     {
@@ -91,8 +91,8 @@
       "stage": "assets",
       "status": "passed",
       "owner": "art",
-      "message": "All manifest assets decode as visible 32 by 32 PNGs.",
-      "expected": "four valid production PNG assets",
+      "message": "All manifest assets decode as visible 64 by 64 PNGs.",
+      "expected": "four valid 64 by 64 production PNG assets",
       "actual": null,
       "artifactPaths": [
         "build"

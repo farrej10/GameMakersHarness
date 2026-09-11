@@ -306,7 +306,14 @@ async function main(): Promise<void> {
     const id = argument('--run');
     if (!id) throw new Error('Usage: game:generate -- --run <run-id>');
     const { generateRun } = await import('./orchestrator');
-    const verification = await generateRun({ runId: id });
+    const demoFault = argument('--demo-fault');
+    if (demoFault !== undefined && demoFault !== 'logic-victory') {
+      throw new Error('Supported demo fault: logic-victory');
+    }
+    const verification = await generateRun({
+      runId: id,
+      demoFault: demoFault as 'logic-victory' | undefined,
+    });
     process.stdout.write(`Run ${id}: ${verification.status}.\n`);
     process.exitCode = verification.status === 'passed' ? 0 : 1;
     return;

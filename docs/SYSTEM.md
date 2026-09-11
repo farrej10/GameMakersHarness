@@ -1,6 +1,6 @@
 # Agentic system design
 
-Status: implemented and live-evaluated as of 2026-09-09. The diagram describes the shipped flow; fixture and credentialed evidence for overlap and recovery are linked below.
+Status: implemented and live-evaluated as of 2026-09-11. The diagram describes the shipped flow; fixture and credentialed evidence for overlap and recovery are linked below.
 
 ## 1. System map
 
@@ -12,10 +12,10 @@ flowchart TD
     Approval --> Orchestrator[Deterministic Node orchestrator]
     Orchestrator --> Logic[Logic worker: two TypeScript functions]
     Orchestrator --> Level[Level worker: entity coordinates]
-    Orchestrator --> Art[Art worker: pixel grids]
+    Orchestrator --> Art[Art worker: four image requests]
     Logic --> Integration[Validate and integrate into run directory]
     Level --> Integration
-    Art --> Pixels[Deterministic PNG renderer]
+    Art --> Pixels[64 px normalization or deterministic fallback]
     Pixels --> Integration
     Integration --> Verify[Protected harness]
     Verify -->|all pass| Export[Static game and evidence report]
@@ -136,8 +136,8 @@ Each call gets the role prompt, output schema, a compact task packet, and no pre
 | Spec | Original description, seed, supported capabilities, defaults and bounds | Source repository, worker logs, credentials |
 | Logic | Approved mechanics, exact type declarations, two behavior truth tables, example module skeleton | Art grids, full level coordinates, original conversation |
 | Level | Counts, seed, arena, distances, quadrant constraint, one valid coordinate example | Game source, API settings, art |
-| Art | Theme names, palette, manifest, row grammar, one valid sprite example | Logic source, tests, level coordinates |
-| Repair | Current owner artifact, relevant contract, approved spec subset, first 3 failures for that owner, relevant text logs | Other workers' histories, unrelated source, credentials |
+| Art | Identity, entity names, palette, signature mechanic, 64 by 64 sprite constraints, and one entity per request | Logic source, tests, level coordinates |
+| Repair | Current owner artifact, relevant contract, approved spec subset, first 3 failures for that owner, relevant text logs, prior rejected-repair errors, and a complete valid low-complexity example for logic | Other workers' histories, unrelated source, credentials |
 
 Preserve the context packet and its SHA-256 alongside the response. Store full sanitized logs locally, but send at most 8,000 bytes of failure excerpts with filenames and line numbers. Keep the contract and actual failure ahead of optional examples when reducing context. If required context still exceeds the limit, stop with `CONTEXT_LIMIT`; never silently remove the contract.
 
@@ -148,8 +148,8 @@ Repair models need text assertions and current code. Screenshots are judge/human
 1. Acquire the single active-generation lock using exclusive file creation. A second active run exits clearly. A stale lock after a crash is an explicit recovery condition, not an invitation to delete another process's files.
 2. Revalidate approved spec and its hash. Snapshot protected baseline file hashes.
 3. Derive manifest from trusted constants.
-4. Start logic, level, and art promises without awaiting one before starting the next; collect all results with `Promise.allSettled`.
-5. Each worker saves response to its own attempt directory. Only the orchestrator selects final accepted outputs.
+4. Submit logic, level, and art to a bounded worker pool controlled by `parallelWorkers`. With the default of three, all begin together; lower limits queue work without exceeding configured concurrency.
+5. Emit start and terminal events and save each worker response as that worker actually starts or settles. Only the orchestrator selects final accepted outputs.
 6. Validate role schemas and semantic constraints. Initial invalid output gets one role correction. Art may fall back as described in CONTRACTS; invalid logic or level stops the run after its correction limit.
 7. Construct run-local integration files from accepted artifacts; use fixed filenames, never paths from model text.
 8. Build and verify through the fixed harness.
@@ -202,7 +202,7 @@ For submission, curate one real run under `evidence/`, keep relative links intac
 
 ## 9. Implemented evidence map
 
-The trusted orchestrator starts logic, level, and art promises before awaiting `Promise.allSettled`. `tests/integration/orchestrator.test.ts` uses a barrier-backed fake client: all three roles must reach the barrier before any response is released. The same test asserts that integration files exist before verification begins.
+The trusted orchestrator dispatches logic, level, and art through a bounded worker pool. `tests/integration/orchestrator.test.ts` uses a barrier-backed fake client: with the default concurrency of three, all roles must reach the barrier before any response is released. Completion events are written when each promise settles, so the report timeline reflects the actual critical path. The same test asserts that integration files exist before verification begins.
 
 ```mermaid
 gantt
@@ -218,6 +218,24 @@ gantt
   Verify :5, 3
 ```
 
-The injected-fault repair test supplies a source-valid but behaviorally incorrect logic module. Attempt 0 reports a logic-owned policy failure. The repair worker returns a complete replacement; the orchestrator saves before, after, and diff artifacts, reintegrates, and attempt 1 passes. No human callback exists in this path. A second test rejects three replacements and asserts exactly three repair calls.
+The live Storm run records the same overlap with provider latency rather than fixture delays:
 
-Reference verification evidence is curated under `evidence/reference/`. Credentialed timings, returned model/provider IDs, token use, reported cost, worker overlap, and screenshots are curated under `evidence/live-greenhouse/`, `evidence/live-moon/`, and `evidence/LIVE-RUNS.md`. The observed live harness failure and its preserved pre-fix evidence are under `evidence/live-recovery/`.
+```mermaid
+gantt
+  title Storm Courier worker time after dispatch (seconds)
+  dateFormat X
+  axisFormat %S
+  section Workers
+  Logic :0, 3
+  Level including correction :0, 15
+  Art, four image requests :0, 28
+  section Trusted pipeline
+  Integrate and inject labeled fault :28, 1
+  Verify attempt 0 :29, 19
+  Repair model :48, 11
+  Verify attempt 1 :59, 22
+```
+
+The injected-fault repair test supplies a source-valid but behaviorally incorrect logic module. Attempt 0 reports a logic-owned policy failure. The repair worker returns a complete replacement; the orchestrator saves before, after, and diff artifacts, reintegrates, and attempt 1 passes. No human callback exists in this path. A second test rejects three replacements and asserts exactly three repair calls. Verification clears only its own logs, screenshots, and result file when rerun, preserving the repair artifacts already written into that attempt.
+
+Reference verification evidence is curated under `evidence/reference/`. Credentialed timings, returned model/provider IDs, token use, reported cost, worker overlap, and screenshots are curated under `evidence/live-greenhouse/`, `evidence/live-moon/`, `evidence/live-storm/`, and `evidence/LIVE-RUNS.md`. Storm contains a live OpenRouter repair after a clearly labeled injected fault; `evidence/AUTONOMOUS-REPAIR.md` maps every step to its artifact. The observed earlier harness failure and its preserved pre-fix evidence remain under `evidence/live-recovery/`.

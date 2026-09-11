@@ -4,12 +4,16 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stableJson } from '../../src/toolkit/cli';
 import { startControlServer, type ControlServer } from '../../src/toolkit/control';
+import { EventWriter } from '../../src/toolkit/events';
 
 const runId = '20260909T120000Z-abcdef12';
 
 describe('local control page', () => {
   let server: ControlServer | undefined;
-  afterEach(async () => server?.close());
+  afterEach(async () => {
+    await server?.close();
+    server = undefined;
+  });
 
   it('serves the UI, checks mutation origin, and invokes injected actions', async () => {
     const runsRoot = mkdtempSync(path.join(tmpdir(), 'control-runs-'));
@@ -28,7 +32,10 @@ describe('local control page', () => {
     });
 
     const page = await fetch(server.origin);
-    expect(await page.text()).toContain('Agentic Game Maker');
+    const pageText = await page.text();
+    expect(pageText).toContain('Agentic Game Maker');
+    expect(pageText).toContain('Design summary');
+    expect(pageText).toContain('Demonstrate autonomous repair');
     const forbidden = await fetch(`${server.origin}/api/spec`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -77,6 +84,39 @@ describe('local control page', () => {
     );
     writeFileSync(path.join(runRoot, 'report.html'), '<h1>Report</h1>');
     writeFileSync(path.join(runRoot, 'build', 'index.html'), '<h1>Playable</h1>');
+    const events = new EventWriter(runId, path.join(runRoot, 'events.jsonl'));
+    for (const role of ['logic', 'level', 'art'] as const) {
+      events.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
+      events.append({
+        type: 'worker.completed',
+        role,
+        attempt: 0,
+        data: { requestId: `${role}_0`, artifactPath: `workers/${role}/attempt-0/output.json` },
+      });
+    }
+    events.append({
+      type: 'demo.fault.injected',
+      role: 'logic',
+      attempt: null,
+      data: {
+        owner: 'logic',
+        fault: 'logic-victory',
+        originalPath: 'evidence/demo-fault/original-logic.json',
+        injectedPath: 'evidence/demo-fault/injected-logic.json',
+      },
+    });
+    events.append({
+      type: 'repair.started',
+      role: 'repair',
+      attempt: 1,
+      data: { owner: 'logic', requestId: 'repair_1', checkIds: ['PLAY-07'] },
+    });
+    events.append({
+      type: 'artifact.rejected',
+      role: 'repair',
+      attempt: 1,
+      data: { artifact: 'logic', errors: ['invalid'] },
+    });
     server = await startControlServer({
       port: 0,
       gamePort: 0,
@@ -98,5 +138,16 @@ describe('local control page', () => {
     const body = (await play.json()) as { origin: string };
     expect(body.origin).not.toBe(server.origin);
     expect(await (await fetch(body.origin)).text()).toBe('<h1>Playable</h1>');
+
+    const progress = await fetch(`${server.origin}/api/run/${runId}`);
+    await expect(progress.json()).resolves.toMatchObject({
+      state: 'verified',
+      workers: [
+        { role: 'logic', status: 'completed' },
+        { role: 'level', status: 'completed' },
+        { role: 'art', status: 'completed' },
+      ],
+      repair: { owner: 'logic', attempt: 1, status: 'failed' },
+    });
   });
 });

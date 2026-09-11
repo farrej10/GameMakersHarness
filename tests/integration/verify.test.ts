@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  classifyBrowserFailure,
   compareProtectedFiles,
   snapshotProtectedFiles,
 } from '../../scripts/verify';
@@ -20,6 +21,17 @@ describe('protected file snapshots', () => {
 
   it('is stable when the workspace is unchanged', () => {
     expect(compareProtectedFiles(snapshotProtectedFiles(), snapshotProtectedFiles())).toEqual([]);
+  });
+});
+
+describe('browser failure ownership', () => {
+  it('classifies the first failed test instead of an earlier passing test name', () => {
+    const output = [
+      '  ok  1 gameplay.spec.ts › PLAY-01 actual generated game loads',
+      '  x   7 gameplay.spec.ts › PLAY-07 collect-then-exit requires exit contact',
+      '  x  12 gameplay.spec.ts › POLICY-03 generated victory truth table',
+    ].join('\n');
+    expect(classifyBrowserFailure(output)).toEqual({ id: 'PLAY-07', owner: 'logic' });
   });
 });
 

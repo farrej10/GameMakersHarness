@@ -9,6 +9,14 @@ export type LogicWorkerResult = {
   rejected: string[][];
 };
 
+export function normalizeLogicOutput(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return value;
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.source === 'string'
+    ? { ...candidate, source: candidate.source.replace(/[\u200B-\u200D\uFEFF]/gu, '') }
+    : value;
+}
+
 export async function runLogicWorker(options: {
   spec: GameSpec;
   model: string;
@@ -33,10 +41,11 @@ export async function runLogicWorker(options: {
     };
     const result = await options.client.generate(request, options.signal);
     requests.push({ request, result, context });
-    const errors = validateLogicArtifact(result.content).map(
+    const normalized = normalizeLogicOutput(result.content);
+    const errors = validateLogicArtifact(normalized).map(
       ({ code, instancePath, message }) => `${instancePath || '/'} ${code}: ${message}`,
     );
-    if (!errors.length) return { output: result.content as LogicOutput, requests, rejected };
+    if (!errors.length) return { output: normalized as LogicOutput, requests, rejected };
     rejected.push(errors);
     if (attempt === 0) {
       context = correctionContext(

@@ -119,7 +119,9 @@ describe('orchestrator', () => {
             resolve(response(request, outputFor(request)));
           });
           if (pending.size === 3) {
-            for (const role of ['art', 'logic', 'level']) pending.get(role)?.();
+            pending.get('art')?.();
+            setTimeout(() => pending.get('logic')?.(), 5);
+            setTimeout(() => pending.get('level')?.(), 10);
           }
         }),
     };
@@ -136,9 +138,43 @@ describe('orchestrator', () => {
     const status = JSON.parse(readFileSync(path.join(run.runRoot, 'status.json'), 'utf8')) as RunStatus;
     expect(status.state).toBe('verified');
     expect(status.requestCount).toBe(4);
-    const eventTypes = readEvents(path.join(run.runRoot, 'events.jsonl')).map(({ type }) => type);
+    const recordedEvents = readEvents(path.join(run.runRoot, 'events.jsonl'));
+    const eventTypes = recordedEvents.map(({ type }) => type);
     expect(eventTypes).toContain('integration.completed');
     expect(eventTypes.at(-1)).toBe('run.verified');
+    expect(
+      recordedEvents
+        .filter(({ type, role }) => type === 'worker.completed' && role !== 'spec')
+        .map(({ role }) => role),
+    ).toEqual(['art', 'logic', 'level']);
+  });
+
+  it('honors a lower configured worker concurrency limit', async () => {
+    const run = await approvedRun();
+    const publicConfig = JSON.parse(
+      readFileSync(path.join(run.runRoot, 'config.json'), 'utf8'),
+    ) as Omit<ToolkitConfig, 'apiKey'>;
+    publicConfig.limits.parallelWorkers = 1;
+    writeFileSync(path.join(run.runRoot, 'config.json'), stableJson(publicConfig));
+    let active = 0;
+    let maximumActive = 0;
+    const started: string[] = [];
+    const client: ModelClient = {
+      generate: async (request) => {
+        started.push(request.role);
+        active += 1;
+        maximumActive = Math.max(maximumActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        active -= 1;
+        return response(request, outputFor(request));
+      },
+    };
+
+    await expect(
+      generateRun({ ...run, client, verify: async () => verification(run.runId) }),
+    ).resolves.toMatchObject({ status: 'passed' });
+    expect(maximumActive).toBe(1);
+    expect(started).toEqual(['logic', 'level', 'art']);
   });
 
   it('blocks a changed approved spec before any model call', async () => {
@@ -243,6 +279,47 @@ describe('orchestrator', () => {
     expect(readEvents(path.join(run.runRoot, 'events.jsonl')).map(({ type }) => type)).toEqual(
       expect.arrayContaining(['repair.started', 'repair.completed', 'run.verified']),
     );
+  });
+
+  it('labels a deterministic demo fault and repairs it through the normal loop', async () => {
+    const run = await approvedRun();
+    const client: ModelClient = {
+      generate: async (request) => {
+        if (request.role === 'repair') {
+          return response(request, {
+            schemaVersion: 1,
+            diagnosis: 'Victory ignored the exit requirement.',
+            output: logic,
+          });
+        }
+        return response(request, outputFor(request));
+      },
+    };
+    const verify = vi.fn(async (runId: string, attempt: number) => {
+      const integrated = readFileSync(
+        path.join(run.runRoot, 'integration', 'generated', 'rules.ts'),
+        'utf8',
+      );
+      if (attempt === 0) {
+        expect(integrated).toContain('return context.score >= context.target');
+        return verification(runId, 'failed');
+      }
+      expect(integrated).toBe(logic.source);
+      return verification(runId, 'passed');
+    });
+
+    await expect(
+      generateRun({ ...run, client, verify, demoFault: 'logic-victory' }),
+    ).resolves.toMatchObject({ status: 'passed' });
+    const events = readEvents(path.join(run.runRoot, 'events.jsonl'));
+    expect(events.map(({ type }) => type)).toEqual(
+      expect.arrayContaining(['demo.fault.injected', 'repair.started', 'repair.completed']),
+    );
+    const report = JSON.parse(readFileSync(path.join(run.runRoot, 'report.json'), 'utf8')) as {
+      provenance: string;
+    };
+    expect(report.provenance).toBe('injected-fault');
+    expect(existsSync(path.join(run.runRoot, 'evidence', 'demo-fault', 'original-logic.json'))).toBe(true);
   });
 
   it('stops after three rejected repairs and never dispatches a fourth', async () => {

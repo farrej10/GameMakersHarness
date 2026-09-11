@@ -1,0 +1,55 @@
+{
+  "adaptations": [],
+  "arena": {
+    "height": 600,
+    "width": 800
+  },
+  "collectibles": {
+    "count": 4,
+    "interaction": "ordered"
+  },
+  "description": "A storm courier dashes between four numbered lightning shrines while stone sentinels guard the routes. Survive the growing tempest, then escape through a grounded arch. Use a divided ritual arena and electric teal and gold pixel art.",
+  "enemies": {
+    "behavior": "guard",
+    "count": 2,
+    "speed": 70
+  },
+  "identity": {
+    "dramaticPressure": "Temporal tempest intensifies while guards watch.",
+    "fantasy": "A courier battles a storm to deliver lightning shrines, guided by the pulse of a ritual arena.",
+    "pacing": "escalating",
+    "signatureMechanic": "Dash between numbered shrines, completing them in sequence."
+  },
+  "objective": {
+    "mode": "survive-then-exit",
+    "survivalTicks": 1800
+  },
+  "player": {
+    "health": 4,
+    "movement": {
+      "cooldownTicks": 120,
+      "distance": 100,
+      "mode": "dash"
+    },
+    "speed": 160
+  },
+  "schemaVersion": 1,
+  "seed": 77,
+  "theme": {
+    "collectibleName": "Lightning Shrine",
+    "enemyName": "Stone Sentinel",
+    "exitName": "Grounded Arch",
+    "palette": [
+      "#003366",
+      "#FFCC00",
+      "#00FFD5",
+      "#FFFFFF"
+    ],
+    "playerName": "Storm Courier"
+  },
+  "title": "Storm Courier",
+  "world": {
+    "layout": "lanes",
+    "pressure": "rising-danger"
+  }
+}

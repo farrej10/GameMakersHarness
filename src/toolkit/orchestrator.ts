@@ -16,7 +16,15 @@ import { snapshotProtectedFiles } from '../../scripts/verify';
 import { loadToolkitConfig, type ToolkitConfig } from './config';
 import { EventWriter } from './events';
 import { deriveAssetManifest, integrateArtifacts } from './integrate';
-import { OpenRouterClient, RequestBudget, type ModelClient, type RetryNotice } from './openrouter';
+import {
+  OpenRouterClient,
+  RequestBudget,
+  type ImageModelRequest,
+  type ModelClient,
+  type ModelRequest,
+  type ModelResult,
+  type RetryNotice,
+} from './openrouter';
 import { generateExecutionReport } from './report';
 import {
   readRunStatus,
@@ -29,6 +37,7 @@ import {
 import { runArtWorker, type ArtWorkerResult } from './workers/art';
 import { runLevelWorker, type LevelWorkerResult } from './workers/level';
 import { runLogicWorker, type LogicWorkerResult } from './workers/logic';
+import { validateLogicArtifact } from './validate';
 import {
   RepairRejectedError,
   runRepairWorker,
@@ -94,6 +103,43 @@ function replacementDiff(before: unknown, after: unknown): string {
 type Verification = (runId: string, attempt: number) => Promise<VerifyResult>;
 type CompletedWorker = LogicWorkerResult | LevelWorkerResult | ArtWorkerResult;
 
+async function settleWithLimit<T>(
+  tasks: readonly (() => Promise<T>)[],
+  requestedLimit: number,
+): Promise<PromiseSettledResult<T>[]> {
+  const results = new Array<PromiseSettledResult<T>>(tasks.length);
+  const limit = Math.max(1, Math.min(tasks.length, requestedLimit));
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < tasks.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = { status: 'fulfilled', value: await tasks[index]!() };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: limit }, worker));
+  return results;
+}
+
+function injectVictoryDemoFault(logic: LogicOutput): LogicOutput {
+  const marker = 'export function isVictory';
+  const start = logic.source.lastIndexOf(marker);
+  if (start < 0) throw new Error('Cannot inject demo fault: isVictory export was not found.');
+  const injected: LogicOutput = {
+    schemaVersion: 1,
+    source: `${logic.source.slice(0, start)}export function isVictory(context: VictoryContext): boolean {\n  return context.score >= context.target;\n}\n`,
+  };
+  const issues = validateLogicArtifact(injected);
+  if (issues.length) {
+    throw new Error(`Cannot inject demo fault: ${issues.map(({ code }) => code).join(', ')}.`);
+  }
+  return injected;
+}
+
 function loadPublicConfig(runRoot: string, apiKey: string): ToolkitConfig {
   const value = JSON.parse(readFileSync(path.join(runRoot, 'config.json'), 'utf8')) as Omit<ToolkitConfig, 'apiKey'>;
   return { apiKey, models: value.models, limits: value.limits };
@@ -135,6 +181,34 @@ function recordWorkerResult(
   });
 }
 
+function recordingClient(runRoot: string, client: ModelClient): ModelClient {
+  const save = (
+    request: ModelRequest | ImageModelRequest,
+    result: ModelResult,
+  ) => {
+    writeFileSync(
+      path.join(runRoot, 'requests', `${request.requestId}.json`),
+      stableJson({
+        request,
+        response: request.role === 'art'
+          ? { ...result, content: { imageGenerated: true } }
+          : result,
+      }),
+    );
+    return result;
+  };
+  return {
+    generate: async (request, signal) =>
+      save(request, await client.generate(request, signal)),
+    ...(client.generateImage
+      ? {
+          generateImage: async (request: ImageModelRequest, signal: AbortSignal) =>
+            save(request, await client.generateImage!(request, signal)),
+        }
+      : {}),
+  };
+}
+
 export async function generateRun(options: {
   runId: string;
   runsRoot?: string;
@@ -142,6 +216,7 @@ export async function generateRun(options: {
   verify?: Verification;
   now?: () => Date;
   signal?: AbortSignal;
+  demoFault?: 'logic-victory';
 }): Promise<VerifyResult> {
   const runsRoot = options.runsRoot ?? path.join(projectRoot, 'runs');
   const runRoot = safeRunRoot(runsRoot, options.runId);
@@ -192,7 +267,7 @@ export async function generateRun(options: {
     );
     const onRetry = (notice: RetryNotice) =>
       events.append({ type: 'request.retry', role: null, attempt: null, data: notice });
-    const client = options.client ?? new OpenRouterClient({
+    const baseClient = options.client ?? new OpenRouterClient({
       apiKey: config.apiKey,
       budget,
       requestTimeoutMs: config.limits.requestTimeoutMs,
@@ -200,6 +275,7 @@ export async function generateRun(options: {
       schemaLimitBytes: config.limits.schemaBytes,
       onRetry,
     });
+    const client = recordingClient(runRoot, baseClient);
     const signal = options.signal ?? new AbortController().signal;
     const prompt = (role: string) => readFileSync(path.join(projectRoot, 'prompts', `${role}.md`), 'utf8');
     const jobs = [
@@ -207,25 +283,12 @@ export async function generateRun(options: {
       ['level', () => runLevelWorker({ spec, model: config.models.level, systemPrompt: prompt('level'), client, signal })],
       ['art', () => runArtWorker({ spec, manifest, model: config.models.art, systemPrompt: prompt('art'), client, signal })],
     ] as const;
-    for (const [role] of jobs) {
+    const executeJob = async ([role, start]: (typeof jobs)[number]) => {
       events.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
-    }
-    const settled = await Promise.allSettled(jobs.map(([, start]) => start()));
-    const failures: Error[] = [];
-    settled.forEach((entry, index) => {
-      const role = jobs[index]![0];
-      if (entry.status === 'rejected') {
-        const error = entry.reason instanceof Error ? entry.reason : new Error(String(entry.reason));
-        failures.push(error);
-        events.append({
-          type: 'worker.failed',
-          role,
-          attempt: 0,
-          data: { requestId: `${role}_0`, code: 'WORKER_FAILED', message: boundedMessage(error) },
-        });
-      } else {
-        recordWorkerResult(runRoot, role, entry.value);
-        entry.value.rejected.forEach((errors, attempt) =>
+      try {
+        const completed = await start();
+        recordWorkerResult(runRoot, role, completed);
+        completed.rejected.forEach((errors, attempt) =>
           events.append({
             type: 'artifact.rejected',
             role,
@@ -236,12 +299,36 @@ export async function generateRun(options: {
         events.append({
           type: 'worker.completed',
           role,
-          attempt: Math.max(0, entry.value.requests.length - 1),
+          attempt: Math.max(0, completed.requests.length - 1),
           data: {
-            requestId: entry.value.requests.at(-1)?.request.requestId ?? `${role}_0`,
-            artifactPath: `workers/${role}/attempt-${Math.max(0, entry.value.requests.length - 1)}/output.json`,
+            requestId: completed.requests.at(-1)?.request.requestId ?? `${role}_0`,
+            artifactPath: `workers/${role}/attempt-${Math.max(0, completed.requests.length - 1)}/output.json`,
           },
         });
+        return completed;
+      } catch (error) {
+        events.append({
+          type: 'worker.failed',
+          role,
+          attempt: 0,
+          data: {
+            requestId: `${role}_0`,
+            code: 'WORKER_FAILED',
+            message: boundedMessage(error),
+          },
+        });
+        throw error;
+      }
+    };
+    const settled = await settleWithLimit(
+      jobs.map((job) => () => executeJob(job)),
+      config.limits.parallelWorkers,
+    );
+    const failures: Error[] = [];
+    settled.forEach((entry) => {
+      if (entry.status === 'rejected') {
+        const error = entry.reason instanceof Error ? entry.reason : new Error(String(entry.reason));
+        failures.push(error);
       }
     });
     status.requestCount = Math.max(status.requestCount + jobs.length, budget.count);
@@ -253,6 +340,24 @@ export async function generateRun(options: {
     let currentLogic: LogicOutput = logic.output;
     let currentLevel: LevelOutput = level.output;
     let currentArt: ArtOutput = art.output;
+    if (options.demoFault === 'logic-victory') {
+      const demoRoot = path.join(runRoot, 'evidence', 'demo-fault');
+      mkdirSync(demoRoot, { recursive: true });
+      writeFileSync(path.join(demoRoot, 'original-logic.json'), stableJson(currentLogic));
+      currentLogic = injectVictoryDemoFault(currentLogic);
+      writeFileSync(path.join(demoRoot, 'injected-logic.json'), stableJson(currentLogic));
+      events.append({
+        type: 'demo.fault.injected',
+        role: 'logic',
+        attempt: null,
+        data: {
+          owner: 'logic',
+          fault: 'logic-victory',
+          originalPath: 'evidence/demo-fault/original-logic.json',
+          injectedPath: 'evidence/demo-fault/injected-logic.json',
+        },
+      });
+    }
     if (art.artSource === 'fallback') {
       events.append({
         type: 'art.fallback',
@@ -293,6 +398,7 @@ export async function generateRun(options: {
     });
     let repairIterations = 0;
     let verificationAttempt = 0;
+    const previousRepairErrors: string[] = [];
     while (
       verification.status === 'failed' &&
       repairIterations < config.limits.maxRepairIterations
@@ -340,6 +446,7 @@ export async function generateRun(options: {
           systemPrompt: prompt('repair'),
           client,
           signal,
+          previousRepairErrors,
         });
         status.requestCount = Math.max(status.requestCount + 1, budget.count);
         const repairRoot = path.join(
@@ -411,6 +518,7 @@ export async function generateRun(options: {
       } catch (error) {
         status.requestCount = Math.max(status.requestCount + 1, budget.count);
         if (!(error instanceof RepairRejectedError)) throw error;
+        previousRepairErrors.push(error.message);
         const repairRoot = path.join(
           runRoot,
           'workers',

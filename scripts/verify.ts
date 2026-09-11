@@ -262,8 +262,10 @@ function makeCheck(
   return { id, stage, status, owner, message, expected, actual, artifactPaths };
 }
 
-function classifyBrowserFailure(output: string): { id: string; owner: CheckResult['owner'] } {
-  const id = output.match(/(?:PLAY|POLICY|LEVEL-PLAY|PROD)-\d+/u)?.[0] ??
+export function classifyBrowserFailure(output: string): { id: string; owner: CheckResult['owner'] } {
+  const id = output.match(
+    /^\s*x\s+\d+[^\r\n]*?\b(POLICY-GUARD|LEVEL-PLAY-\d+|PLAY-\d+|POLICY-\d+|PROD-\d+)/mu,
+  )?.[1] ?? output.match(/(?:LEVEL-PLAY|PLAY|POLICY|PROD)-\d+/u)?.[0] ??
     (output.includes('POLICY-GUARD') ? 'POLICY-GUARD' : 'BROWSER-SUITE');
   if (id.startsWith('POLICY') || id === 'PLAY-07') return { id, owner: 'logic' };
   if (id.startsWith('LEVEL')) return { id, owner: 'level' };
@@ -276,8 +278,12 @@ function classifyBrowserFailure(output: string): { id: string; owner: CheckResul
 
 export async function verifyRun(runId: string, attempt: number): Promise<VerifyResult> {
   const selected = selectArtifacts(runId, attempt);
-  rmSync(selected.evidenceRoot, { recursive: true, force: true });
   const logsRoot = path.join(selected.evidenceRoot, 'logs');
+  const browserOutput = path.join(selected.evidenceRoot, 'playwright');
+  const reportPath = path.join(selected.evidenceRoot, 'verify.json');
+  rmSync(logsRoot, { recursive: true, force: true });
+  rmSync(browserOutput, { recursive: true, force: true });
+  rmSync(reportPath, { force: true });
   mkdirSync(logsRoot, { recursive: true });
   const testBuild = path.join(
     runId === 'reference' ? selected.evidenceRoot : selected.runRoot,
@@ -287,8 +293,6 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     runId === 'reference' ? selected.evidenceRoot : selected.runRoot,
     'build',
   );
-  const browserOutput = path.join(selected.evidenceRoot, 'playwright');
-  const reportPath = path.join(selected.evidenceRoot, 'verify.json');
   const startedAt = new Date().toISOString();
   const checks: CheckResult[] = [];
   const invocationBaseline = snapshotProtectedFiles();

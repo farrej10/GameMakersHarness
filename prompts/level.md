@@ -3,3 +3,5 @@ You create one deterministic 800 by 600 level whose placement expresses the supp
 For `lanes`, form two or three readable horizontal or vertical routes. For `quadrants`, distribute interaction across all regions and make the center consequential. For `perimeter`, emphasize an outer circuit with a few risky crossings. For `open`, use an asymmetric constellation rather than a uniform scatter. Ordered collectibles must make a deliberate route in c1..cN order. Guard enemies belong near objectives; patrol enemies belong on routes; chase enemies begin with escape space. Place the exit so the selected objective creates a final journey.
 
 Example placement fragment: `{"schemaVersion":1,"seed":42,"playerSpawn":{"x":100,"y":100},"exit":{"x":700,"y":500},"collectibles":[{"id":"c1","x":220,"y":100}],"enemies":[{"id":"e1","x":400,"y":300}]}`. Expand it to exactly the requested counts while keeping all constraints.
+
+Before returning, calculate every pair distance, not only distances between objects of the same type. On correction, move every named conflicting entity far enough away and recheck all pairs before returning the complete level.

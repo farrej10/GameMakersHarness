@@ -17,13 +17,13 @@ Use clearly labeled time compression or recorded runs where generation exceeds t
 
 ### Exact recording sequence
 
-1. Start `npm.cmd run control` and open `http://127.0.0.1:4300`.
+1. Start `npm run control` (`npm.cmd` in Windows PowerShell if needed) and open `http://127.0.0.1:4300`.
 2. Paste `examples/storm.txt`, create the spec, show the fantasy and mechanic chips plus exact JSON and hash, and approve it.
 3. Select “Demonstrate autonomous repair” and start generation. Time-compress the waiting period with a visible label while retaining the visible worker-state transitions.
 4. Open the verified build from the report and demonstrate the dash trail, collection burst, hit reaction, ordered collection, a guarding sentinel, survival pressure, and the exit objective.
 5. Open the Greenhouse and Moon builds briefly to show different movement, collection, enemy behavior, objective, layout, and art.
 6. Show Storm’s report timeline, `injected-fault` label, failed `PLAY-07`, before/after diff, OpenRouter repair metadata, passing attempt 1, and the three-repair cap test.
-7. End on `npm.cmd run verify`, the public playable URL, and the repository URL.
+7. End on `npm run verify` (`npm.cmd` in Windows PowerShell if needed), the public playable URL, and the repository URL.
 
 Three credentialed runs now exist under `evidence/live-greenhouse/`, `evidence/live-moon/`, and `evidence/live-storm/`; their reports and screenshots may be shown as live evidence. Storm’s injected defect must retain the visible `injected-fault` label. Screenshots under `evidence/screenshots/` remain reference fixtures and require a persistent `REFERENCE FIXTURE` label.
 

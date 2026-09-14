@@ -290,7 +290,7 @@ async function main(): Promise<void> {
     process.stdout.write(
       `Run: ${result.runId}\nTitle: ${result.spec.title}\nObjective: ${result.spec.description}\nAdaptations: ${
         result.spec.adaptations.length ? result.spec.adaptations.join('; ') : 'none'
-      }\nSpec SHA-256: ${result.hash}\nApprove with: npm.cmd run game:approve -- --run ${result.runId} --hash ${result.hash}\n`,
+      }\nSpec SHA-256: ${result.hash}\nApprove with: ${process.platform === 'win32' ? 'npm.cmd' : 'npm'} run game:approve -- --run ${result.runId} --hash ${result.hash}\n`,
     );
     return;
   }

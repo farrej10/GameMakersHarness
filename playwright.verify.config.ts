@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { defineConfig, devices } from 'playwright/test';
 
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+
 const testBuild = path.resolve(
   process.env.GAME_TEST_BUILD || 'test-results/verify/reference/build-test',
 );
@@ -12,7 +14,9 @@ const outputDir = path.resolve(
 );
 
 function quote(argument: string): string {
-  return `"${argument.replaceAll('"', '\\"')}"`;
+  return process.platform === 'win32'
+    ? `"${argument.replaceAll('"', '""')}"`
+    : `'${argument.replaceAll("'", "'\\''")}'`;
 }
 
 export default defineConfig({
@@ -30,13 +34,13 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `npm.cmd run game:serve -- --root ${quote(testBuild)} --port 4173`,
+      command: `${npmCommand} run game:serve -- --root ${quote(testBuild)} --port 4173`,
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: false,
       timeout: 30_000,
     },
     {
-      command: `npm.cmd run game:serve -- --root ${quote(productionBuild)} --port 4174`,
+      command: `${npmCommand} run game:serve -- --root ${quote(productionBuild)} --port 4174`,
       url: 'http://127.0.0.1:4174',
       reuseExistingServer: false,
       timeout: 30_000,

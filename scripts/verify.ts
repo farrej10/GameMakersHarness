@@ -33,6 +33,7 @@ import {
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const runIdPattern = /^\d{8}T\d{6}Z-[0-9a-f]{8}$/u;
+const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const REQUIRED_ASSETS = ['player', 'collectible', 'enemy', 'exit'] as const;
 const PROTECTED_ENTRIES = [
   'tests',
@@ -108,10 +109,10 @@ async function runCommand(
   const started = Date.now();
   const npmEntry = process.env.npm_execpath;
   const actualExecutable =
-    process.platform === 'win32' && executable === 'npm.cmd' && npmEntry
+    executable === npmExecutable && npmEntry
       ? process.execPath
       : executable;
-  const actualArgs = actualExecutable === process.execPath && executable === 'npm.cmd'
+  const actualArgs = actualExecutable === process.execPath && executable === npmExecutable
     ? [npmEntry!, ...args]
     : [...args];
   const child = spawn(actualExecutable, actualArgs, {
@@ -421,11 +422,11 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     return command;
   };
 
-  await addCommandCheck('TYPE-REPOSITORY', 'types', 'harness', 'npm.cmd', [
+  await addCommandCheck('TYPE-REPOSITORY', 'types', 'harness', npmExecutable, [
     'run',
     'typecheck',
   ]);
-  await addCommandCheck('TYPE-GENERATED', 'types', 'logic', 'npm.cmd', [
+  await addCommandCheck('TYPE-GENERATED', 'types', 'logic', npmExecutable, [
     'exec',
     '--',
     'tsc',
@@ -442,7 +443,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     selected.rulesPath,
     selected.ruleTypesPath,
   ]);
-  await addCommandCheck('UNIT-SUITE', 'unit', 'harness', 'npm.cmd', [
+  await addCommandCheck('UNIT-SUITE', 'unit', 'harness', npmExecutable, [
     'exec',
     '--',
     'vitest',
@@ -455,7 +456,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     GAME_INTEGRATION_ROOT: selected.integrationRoot ?? '',
     GAME_PUBLIC_DIR: selected.publicDir,
   };
-  await addCommandCheck('BUILD-TEST', 'build', 'harness', 'npm.cmd', [
+  await addCommandCheck('BUILD-TEST', 'build', 'harness', npmExecutable, [
     'exec',
     '--',
     'vite',
@@ -465,7 +466,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     '--outDir',
     testBuild,
   ], viteEnvironment);
-  await addCommandCheck('BUILD-PRODUCTION', 'build', 'harness', 'npm.cmd', [
+  await addCommandCheck('BUILD-PRODUCTION', 'build', 'harness', npmExecutable, [
     'exec',
     '--',
     'vite',
@@ -518,7 +519,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     GAME_PRODUCTION_BUILD: productionBuild,
     GAME_SPEC_PATH: selected.specPath,
   };
-  const browser = await addCommandCheck('BROWSER-SUITE', 'browser', 'runtime', 'npm.cmd', [
+  const browser = await addCommandCheck('BROWSER-SUITE', 'browser', 'runtime', npmExecutable, [
     'exec',
     '--',
     'playwright',
@@ -534,7 +535,7 @@ export async function verifyRun(runId: string, attempt: number): Promise<VerifyR
     check.id = classification.id;
     check.owner = classification.owner;
   }
-  const production = await addCommandCheck('PROD-01', 'production', 'harness', 'npm.cmd', [
+  const production = await addCommandCheck('PROD-01', 'production', 'harness', npmExecutable, [
     'exec',
     '--',
     'playwright',

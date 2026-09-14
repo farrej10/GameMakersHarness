@@ -551,6 +551,10 @@ export const RunEventSchema = Type.Union([
     closedObject({ artifactsPath: RelativeArtifactPath }),
   ),
   eventSchema(
+    'run.retried',
+    closedObject({ sourceRunId: GeneratedRunIdSchema }),
+  ),
+  eventSchema(
     'demo.fault.injected',
     closedObject({
       owner: Type.Literal('logic'),

@@ -93,6 +93,8 @@ Open `http://127.0.0.1:4300`. The description remains editable for another itera
 
 The page also shows live logic, level, art, and repair states, report access, and a verified-game preview. Its optional “Demonstrate autonomous repair” checkbox enables the labeled fault above. Mutations require the loopback page origin. The game runs on a separate static origin, and credentials stay in the Node process.
 
+Agent status cards open inline output details, including accepted artifacts, every raw model attempt, and validation or worker errors. Existing runs can be reopened from the run selector. A stopped run exposes **Retry failed run**, which creates a linked run from the same approved specification and leaves the failed evidence unchanged. Spinners identify specification generation, worker execution, artifact loading, uploads, builds, and verification while they are active.
+
 ## Important directories
 
 - `src/contracts/`: strict TypeBox/Ajv contracts.

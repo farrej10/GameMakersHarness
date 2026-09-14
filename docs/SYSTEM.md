@@ -195,7 +195,7 @@ Human implementation agents may change trusted files while implementing an assig
 
 ## 8. Evidence and status
 
-Run states: `draft`, `awaiting-approval`, `generating`, `reviewing`, `integrating`, `verifying`, `repairing`, `verified`, `stopped`. Legal transitions must be encoded and tested. Approval is legal only from `awaiting-approval`; generation requires matching approval and cannot run twice concurrently. The optional `reviewing` state is durable and resumable. Interrupted active phases stop; automatic crash-resume is out of scope. A retry after a terminal failure starts a new run rather than rewriting evidence.
+Run states: `draft`, `awaiting-approval`, `generating`, `reviewing`, `integrating`, `verifying`, `repairing`, `verified`, `stopped`. Legal transitions must be encoded and tested. Approval is legal only from `awaiting-approval`; generation requires matching approval and cannot run twice concurrently. The optional `reviewing` state is durable and resumable. Interrupted active phases stop; automatic crash-resume is out of scope. A retry after a terminal failure creates a linked run with the same prompt, validated spec, approval hash, and public configuration rather than rewriting evidence. The control API exposes saved model attempts and validation errors read-only for inline diagnosis.
 
 The HTML report is generated from validated JSON/events. Escape every string before inserting it into HTML. Show prompt, approved spec, status, model IDs, actual overlapping worker intervals, verification results, repair diffs, evidence links, cost availability, and art fallback status. Failed or incomplete runs must not show a verified badge.
 

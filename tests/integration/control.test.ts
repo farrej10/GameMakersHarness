@@ -1,10 +1,10 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { stableJson } from '../../src/toolkit/cli';
+import { sha256, stableJson } from '../../src/toolkit/cli';
 import { startControlServer, type ControlServer } from '../../src/toolkit/control';
-import { EventWriter } from '../../src/toolkit/events';
+import { EventWriter, readEvents } from '../../src/toolkit/events';
 
 const runId = '20260909T120000Z-abcdef12';
 
@@ -36,6 +36,9 @@ describe('local control page', () => {
     expect(pageText).toContain('Agentic Game Maker');
     expect(pageText).toContain('Design summary');
     expect(pageText).toContain('Demonstrate autonomous repair');
+    expect(pageText).toContain('Agent outputs and errors');
+    expect(pageText).toContain('Retry failed run');
+    expect(pageText).toContain('class="spinner"');
     const forbidden = await fetch(`${server.origin}/api/spec`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -64,6 +67,47 @@ describe('local control page', () => {
     expect(generated.status).toBe(202);
     expect(approve).toHaveBeenCalledOnce();
     await vi.waitFor(() => expect(generate).toHaveBeenCalledOnce());
+  });
+
+  it('retries a stopped run as a linked run with the same approved specification', async () => {
+    const runsRoot = mkdtempSync(path.join(tmpdir(), 'control-retry-'));
+    const sourceRoot = path.join(runsRoot, runId);
+    mkdirSync(sourceRoot, { recursive: true });
+    const specText = readFileSync(new URL('../fixtures/reference/game-spec.json', import.meta.url), 'utf8');
+    const spec = JSON.parse(specText) as object;
+    const hash = sha256(stableJson(spec));
+    writeFileSync(path.join(sourceRoot, 'prompt.txt'), 'Retry this game.');
+    writeFileSync(path.join(sourceRoot, 'config.json'), stableJson({ models: {}, limits: {} }));
+    writeFileSync(path.join(sourceRoot, 'game-spec.json'), stableJson(spec));
+    writeFileSync(path.join(sourceRoot, 'approval.json'), stableJson({ schemaVersion: 1, specSha256: hash, approvedAt: '2026-09-09T12:00:00.000Z' }));
+    writeFileSync(path.join(sourceRoot, 'status.json'), stableJson({
+      schemaVersion: 1, runId, state: 'stopped', requestCount: 4, activeElapsedMs: 100,
+      reasonCode: 'GENERATION_FAILED', message: 'Logic failed.',
+    }));
+    const generate = vi.fn(async () => undefined);
+    server = await startControlServer({
+      port: 0,
+      gamePort: 0,
+      runsRoot,
+      actions: {
+        propose: async () => ({ runId, hash, spec }),
+        approve: async () => undefined,
+        generate,
+      },
+    });
+
+    const response = await fetch(`${server.origin}/api/retry`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: server.origin },
+      body: JSON.stringify({ runId, pauseForReview: true }),
+    });
+    expect(response.status).toBe(202);
+    const retried = await response.json() as { runId: string };
+    expect(retried.runId).not.toBe(runId);
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledWith(retried.runId, { pauseForReview: true }));
+    expect(readEvents(path.join(runsRoot, retried.runId, 'events.jsonl')).at(-1)).toMatchObject({
+      type: 'run.retried', data: { sourceRunId: runId },
+    });
   });
 
   it('serves reports on the control origin and games on a separate origin', async () => {

@@ -281,7 +281,7 @@ Paths in reports are relative to the run root. A required skipped check means ov
 
 Every event: `schemaVersion`, monotonically increasing `sequence`, `runId`, ISO UTC `at`, `type`, `role` (nullable), `attempt` (nullable integer), `data` (type-specific validated object). Only the orchestrator writes the append-only events stream; workers return data to it. Reject unknown event types in the report reader.
 
-Required event types: `run.created`, `spec.proposed`, `spec.approved`, `worker.started`, `worker.completed`, `worker.failed`, `request.retry`, `artifact.rejected`, `art.fallback`, `integration.completed`, `verify.started`, `verify.completed`, `repair.started`, `repair.completed`, `run.verified`, `run.stopped`.
+Required event types: `run.created`, `spec.proposed`, `spec.approved`, `spec.revised`, `worker.started`, `worker.completed`, `worker.failed`, `request.retry`, `artifact.rejected`, `art.fallback`, `review.ready`, `artifact.revised`, `review.approved`, `run.retried`, `integration.completed`, `verify.started`, `verify.completed`, `repair.started`, `repair.completed`, `run.verified`, `run.stopped`.
 
 ```text
 runs/<run-id>/

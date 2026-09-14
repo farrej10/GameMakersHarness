@@ -112,7 +112,7 @@ Agent outputs and errors are collapsed by default. Selecting an agent opens only
 - Unit and integration tests demonstrate overlapping worker calls, fixed-path integration, approval invalidation, art fallback, protected-file detection, and a bounded autonomous logic repair.
 - A real implementation failure and repair is recorded in `docs/AI-DEV-LOG.md`.
 - Live OpenRouter runs `20260909T211322Z-64f94916`, `20260909T211338Z-c0505a5e`, and `20260911T202329Z-7ce1108f` use generated 64 by 64 image art and pass every verification stage. Storm’s curated report records the injected `PLAY-07` failure, one model repair, and the passing rerun under `evidence/live-storm/`.
-- `release/` contains a static three-game site ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
+- `release/` contains the verified static game gallery ready for GitHub Pages, with deployment automation in `.github/workflows/pages.yml`.
 - Public playable site: <https://farrej10.github.io/GameMakersHarness/>. Verify the deployed landing page and both games with `npm run check:public -- https://farrej10.github.io/GameMakersHarness/`.
 - A clean clone of release commit `8e19f60` completed `npm.cmd ci` with 0 vulnerabilities and passed the full verifier; see `evidence/REPRODUCTION.md`.
 - Human full-level playthroughs and the final three-minute video remain pending.

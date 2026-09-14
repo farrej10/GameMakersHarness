@@ -281,7 +281,7 @@ Paths in reports are relative to the run root. A required skipped check means ov
 
 Every event: `schemaVersion`, monotonically increasing `sequence`, `runId`, ISO UTC `at`, `type`, `role` (nullable), `attempt` (nullable integer), `data` (type-specific validated object). Only the orchestrator writes the append-only events stream; workers return data to it. Reject unknown event types in the report reader.
 
-Required event types: `run.created`, `spec.proposed`, `spec.approved`, `spec.revised`, `worker.started`, `worker.completed`, `worker.failed`, `request.retry`, `artifact.rejected`, `art.fallback`, `review.ready`, `artifact.revised`, `review.approved`, `run.retried`, `integration.completed`, `verify.started`, `verify.completed`, `repair.started`, `repair.completed`, `run.verified`, `run.stopped`.
+Required event types: `run.created`, `spec.proposed`, `spec.approved`, `spec.revised`, `worker.started`, `worker.completed`, `worker.reused`, `worker.failed`, `request.retry`, `artifact.rejected`, `art.fallback`, `review.ready`, `artifact.revised`, `review.approved`, `run.retried`, `integration.completed`, `verify.started`, `verify.completed`, `repair.started`, `repair.completed`, `run.verified`, `run.stopped`.
 
 ```text
 runs/<run-id>/
@@ -290,7 +290,9 @@ runs/<run-id>/
   approval.json
   asset-manifest.json
   config.json                         # effective limits/models; no secrets
-  agent-instructions.json             # optional per-role user guidance, max 2 KB each
+  agent-instructions.json             # optional role and per-sprite guidance, max 2 KB each
+  generation-plan.json                # linked iteration roles/assets selected for regeneration
+  retry-inputs/{logic,level,art}.json # accepted source artifacts used by unchanged roles
   status.json                         # atomic snapshot derived from orchestration state
   events.jsonl
   requests/<request-id>.json          # context, schema and response; never auth headers

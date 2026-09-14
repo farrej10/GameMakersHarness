@@ -238,6 +238,7 @@ describe('approval, verification, and event contracts', () => {
     ['spec.approved', null, null, { specSha256: 'a'.repeat(64) }],
     ['worker.started', 'logic', 0, { requestId: 'logic-0' }],
     ['worker.completed', 'logic', 0, { requestId: 'logic-0', artifactPath: 'workers/logic/attempt-0/output.json' }],
+    ['worker.reused', 'art', null, { sourceRunId: '20260908T210000Z-acde1234', artifactPath: 'retry-inputs/art.json' }],
     ['worker.failed', 'level', 0, { requestId: 'level-0', code: 'INVALID_OUTPUT', message: 'Level validation failed.' }],
     ['request.retry', 'art', 0, { requestId: 'art-0', retryNumber: 1, reason: 'Provider unavailable.', delayMs: 1_000 }],
     ['artifact.rejected', 'logic', 0, { artifact: 'logic', errors: ['Unexpected export.'] }],

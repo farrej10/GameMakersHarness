@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import type { ModelClient, ModelRequest, ModelResult } from '../../src/toolkit/o
 import { generateRun, transitionRun } from '../../src/toolkit/orchestrator';
 import { readReviewArtifacts, reviseReviewArtifact } from '../../src/toolkit/review';
 import { writeAgentInstructions } from '../../src/toolkit/instructions';
+import { writeGenerationPlan } from '../../src/toolkit/generation-plan';
 
 function json<T>(name: string): T {
   return JSON.parse(
@@ -107,6 +108,37 @@ function outputFor(request: ModelRequest): unknown {
 }
 
 describe('orchestrator', () => {
+  it('reruns only planned agents and records successful outputs as reused', async () => {
+    const run = await approvedRun();
+    const retryInputs = path.join(run.runRoot, 'retry-inputs');
+    mkdirSync(retryInputs, { recursive: true });
+    writeFileSync(path.join(retryInputs, 'level.json'), stableJson(level));
+    writeFileSync(path.join(retryInputs, 'art.json'), stableJson(art));
+    writeGenerationPlan(run.runRoot, {
+      sourceRunId: '20260908T120000Z-abcdef12',
+      rerunRoles: ['logic'],
+      artAssetIds: null,
+    });
+    const roles: string[] = [];
+    const client: ModelClient = {
+      generate: async (request) => {
+        roles.push(request.role);
+        if (request.role !== 'logic') throw new Error(`Unexpected rerun: ${request.role}`);
+        return response(request, logic);
+      },
+    };
+
+    await expect(
+      generateRun({ ...run, client, verify: async () => verification(run.runId) }),
+    ).resolves.toMatchObject({ status: 'passed' });
+    expect(roles).toEqual(['logic']);
+    expect(
+      readEvents(path.join(run.runRoot, 'events.jsonl'))
+        .filter(({ type }) => type === 'worker.reused')
+        .map(({ role }) => role),
+    ).toEqual(['level', 'art']);
+  });
+
   it('pauses for durable artifact review, accepts a revision, then resumes without rerunning agents', async () => {
     const run = await approvedRun();
     writeAgentInstructions(run.runRoot, { logic: 'Follow the supplied example exactly.' });

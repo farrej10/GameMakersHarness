@@ -1,7 +1,7 @@
 import { ArtOutputSchema, type ArtOutput, type AssetManifest, type GameSpec, type RasterArtOutput } from '../../contracts/index';
 import { artContext, correctionContext, type ContextPacket } from '../context';
 import { ModelError, type ImageContent, type ImageModelRequest, type ModelClient, type ModelRequest, type ModelResult } from '../openrouter';
-import { createFallbackArtOutput, normalizeImageTo64 } from '../render-pixels';
+import { createFallbackArtOutput, normalizeImageTo64, renderArtOutput } from '../render-pixels';
 import { validateArtArtifact } from '../validate';
 
 export type ArtWorkerResult = {
@@ -28,6 +28,9 @@ export async function runArtWorker(options: {
   systemPrompt: string;
   client: ModelClient;
   signal: AbortSignal;
+  baseArt?: ArtOutput;
+  assetIds?: Array<'player' | 'collectible' | 'enemy' | 'exit'>;
+  assetInstructions?: Partial<Record<'player' | 'collectible' | 'enemy' | 'exit', string>>;
 }): Promise<ArtWorkerResult> {
   const initial = artContext(options.systemPrompt, options.spec, options.manifest);
   const requests: ArtWorkerResult['requests'] = [];
@@ -40,8 +43,13 @@ export async function runArtWorker(options: {
         enemy: options.spec.theme.enemyName,
         exit: options.spec.theme.exitName,
       } as const;
-      const sprites: RasterArtOutput['sprites'][number][] = [];
-      for (const id of ['player', 'collectible', 'enemy', 'exit'] as const) {
+      const allIds = ['player', 'collectible', 'enemy', 'exit'] as const;
+      const requestedIds = options.assetIds ?? [...allIds];
+      const images = options.baseArt
+        ? new Map(renderArtOutput(options.baseArt, options.spec.theme.palette))
+        : new Map<typeof allIds[number], Buffer>();
+      for (const id of requestedIds) {
+        const assetGuidance = options.assetInstructions?.[id];
         const request: ImageModelRequest = {
           requestId: `art_${id}`,
           role: 'art',
@@ -51,7 +59,8 @@ export async function runArtWorker(options: {
             `Game theme: ${options.spec.description}. ` +
             `Fantasy: ${options.spec.identity.fantasy}. ` +
             `Visual pressure: ${options.spec.identity.dramaticPressure}. ` +
-            `World layout: ${options.spec.world.layout}.`,
+            `World layout: ${options.spec.world.layout}.` +
+            (assetGuidance ? `\nUser guidance for this ${id} sprite: ${assetGuidance}` : ''),
         };
         const result = await options.client.generateImage(request, options.signal);
         const content = result.content as Partial<ImageContent>;
@@ -59,15 +68,14 @@ export async function runArtWorker(options: {
           throw new ModelError('MALFORMED_RESPONSE', `Image model returned no PNG for ${id}.`);
         }
         const normalized = normalizeImageTo64(Buffer.from(content.imageBase64, 'base64'));
-        sprites.push({
-          id,
-          width: 64,
-          height: 64,
-          mimeType: 'image/png',
-          pngBase64: normalized.toString('base64'),
-        });
+        images.set(id, normalized);
         requests.push({ request, result, context: initial });
       }
+      const sprites: RasterArtOutput['sprites'][number][] = allIds.map((id) => {
+        const image = images.get(id);
+        if (!image) throw new Error(`Targeted art generation has no base image for ${id}.`);
+        return { id, width: 64, height: 64, mimeType: 'image/png', pngBase64: image.toString('base64') };
+      });
       const output: RasterArtOutput = { schemaVersion: 1, format: 'png-64', sprites };
       const errors = validateArtArtifact(output).map(
         ({ code, instancePath, message }) => `${instancePath || '/'} ${code}: ${message}`,
@@ -77,7 +85,7 @@ export async function runArtWorker(options: {
     } catch (error) {
       if (error instanceof ModelError && STOP_ERRORS.has(error.code)) throw error;
       return {
-        output: createFallbackArtOutput(),
+        output: options.baseArt ?? createFallbackArtOutput(),
         artSource: 'fallback',
         fallbackReason: error instanceof Error ? error.message : String(error),
         requests,
@@ -118,7 +126,7 @@ export async function runArtWorker(options: {
       }
     }
     return {
-      output: createFallbackArtOutput(),
+      output: options.baseArt ?? createFallbackArtOutput(),
       artSource: 'fallback',
       fallbackReason: `Art validation failed after one correction: ${rejected.at(-1)?.join('; ')}`,
       requests,
@@ -127,7 +135,7 @@ export async function runArtWorker(options: {
   } catch (error) {
     if (error instanceof ModelError && STOP_ERRORS.has(error.code)) throw error;
     return {
-      output: createFallbackArtOutput(),
+      output: options.baseArt ?? createFallbackArtOutput(),
       artSource: 'fallback',
       fallbackReason: error instanceof Error ? error.message : String(error),
       requests,

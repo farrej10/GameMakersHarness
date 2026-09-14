@@ -3,7 +3,15 @@ import path from 'node:path';
 
 export const agentInstructionRoles = ['logic', 'level', 'art', 'repair'] as const;
 export type AgentInstructionRole = (typeof agentInstructionRoles)[number];
-export type AgentInstructions = Partial<Record<AgentInstructionRole, string>>;
+export const artInstructionKeys = [
+  'art.player',
+  'art.collectible',
+  'art.enemy',
+  'art.exit',
+] as const;
+export type ArtInstructionKey = (typeof artInstructionKeys)[number];
+export type AgentInstructionKey = AgentInstructionRole | ArtInstructionKey;
+export type AgentInstructions = Partial<Record<AgentInstructionKey, string>>;
 
 export function normalizeAgentInstructions(value: unknown): AgentInstructions {
   if (value === undefined || value === null) return {};
@@ -12,11 +20,11 @@ export function normalizeAgentInstructions(value: unknown): AgentInstructions {
   }
   const input = value as Record<string, unknown>;
   const extra = Object.keys(input).filter(
-    (key) => !agentInstructionRoles.includes(key as AgentInstructionRole),
+    (key) => ![...agentInstructionRoles, ...artInstructionKeys].includes(key as AgentInstructionKey),
   );
   if (extra.length) throw new Error(`Unsupported agent instruction roles: ${extra.join(', ')}.`);
   const result: AgentInstructions = {};
-  for (const role of agentInstructionRoles) {
+  for (const role of [...agentInstructionRoles, ...artInstructionKeys]) {
     const instruction = input[role];
     if (instruction === undefined || instruction === null || instruction === '') continue;
     if (typeof instruction !== 'string') throw new Error(`${role} instructions must be text.`);
@@ -27,6 +35,16 @@ export function normalizeAgentInstructions(value: unknown): AgentInstructions {
     if (trimmed) result[role] = trimmed;
   }
   return result;
+}
+
+export function artAssetInstructions(
+  instructions: AgentInstructions,
+): Partial<Record<'player' | 'collectible' | 'enemy' | 'exit', string>> {
+  return Object.fromEntries(
+    artInstructionKeys
+      .filter((key) => instructions[key])
+      .map((key) => [key.slice(4), instructions[key]]),
+  );
 }
 
 export function readAgentInstructions(runRoot: string): AgentInstructions {

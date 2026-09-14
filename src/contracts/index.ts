@@ -502,6 +502,13 @@ export const RunEventSchema = Type.Union([
     }),
   ),
   eventSchema(
+    'worker.reused',
+    closedObject({
+      sourceRunId: GeneratedRunIdSchema,
+      artifactPath: RelativeArtifactPath,
+    }),
+  ),
+  eventSchema(
     'worker.failed',
     closedObject({
       requestId: RequestIdSchema,

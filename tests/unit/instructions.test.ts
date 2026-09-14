@@ -15,8 +15,12 @@ describe('per-agent instructions', () => {
     const saved = writeAgentInstructions(root, {
       logic: '  Return only valid TypeScript.  ',
       art: '',
+      'art.player': '  Give the pilot a bright glass helmet.  ',
     });
-    expect(saved).toEqual({ logic: 'Return only valid TypeScript.' });
+    expect(saved).toEqual({
+      logic: 'Return only valid TypeScript.',
+      'art.player': 'Give the pilot a bright glass helmet.',
+    });
     expect(readAgentInstructions(root)).toEqual(saved);
     expect(applyAgentInstruction('BASE CONTRACT\n', 'logic', saved)).toContain(
       'BASE CONTRACT\n\nUser guidance for this run:\nReturn only valid TypeScript.',

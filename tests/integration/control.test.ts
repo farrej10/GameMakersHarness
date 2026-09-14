@@ -85,6 +85,17 @@ describe('local control page', () => {
       schemaVersion: 1, runId, state: 'stopped', requestCount: 4, activeElapsedMs: 100,
       reasonCode: 'GENERATION_FAILED', message: 'Logic failed.',
     }));
+    const sourceEvents = new EventWriter(runId, path.join(sourceRoot, 'events.jsonl'));
+    sourceEvents.append({ type: 'worker.started', role: 'logic', attempt: 0, data: { requestId: 'logic_0' } });
+    sourceEvents.append({ type: 'worker.failed', role: 'logic', attempt: 0, data: { requestId: 'logic_0', code: 'WORKER_FAILED', message: 'Logic failed.' } });
+    for (const role of ['level', 'art'] as const) {
+      const artifact = readFileSync(new URL(`../fixtures/reference/${role}.json`, import.meta.url));
+      const relative = `workers/${role}/attempt-0/output.json`;
+      mkdirSync(path.join(sourceRoot, 'workers', role, 'attempt-0'), { recursive: true });
+      writeFileSync(path.join(sourceRoot, relative), artifact);
+      sourceEvents.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
+      sourceEvents.append({ type: 'worker.completed', role, attempt: 0, data: { requestId: `${role}_0`, artifactPath: relative } });
+    }
     const generate = vi.fn(async () => undefined);
     server = await startControlServer({
       port: 0,
@@ -107,8 +118,9 @@ describe('local control page', () => {
       }),
     });
     expect(response.status).toBe(202);
-    const retried = await response.json() as { runId: string };
+    const retried = await response.json() as { runId: string; plan: { rerunRoles: string[]; artAssetIds: string[] | null } };
     expect(retried.runId).not.toBe(runId);
+    expect(retried.plan).toEqual({ sourceRunId: runId, rerunRoles: ['logic'], artAssetIds: null });
     expect((retried as { agentInstructions?: object }).agentInstructions).toEqual({
       logic: 'Follow the valid source example exactly.',
     });
@@ -116,6 +128,53 @@ describe('local control page', () => {
     expect(readEvents(path.join(runsRoot, retried.runId, 'events.jsonl')).at(-1)).toMatchObject({
       type: 'run.retried', data: { sourceRunId: runId },
     });
+    expect(readFileSync(path.join(runsRoot, retried.runId, 'retry-inputs', 'level.json'))).toEqual(
+      readFileSync(new URL('../fixtures/reference/level.json', import.meta.url)),
+    );
+
+    const artResponse = await fetch(`${server.origin}/api/retry`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: server.origin },
+      body: JSON.stringify({
+        runId,
+        pauseForReview: true,
+        agentInstructions: { 'art.player': 'Give the player a bright blue helmet.' },
+      }),
+    });
+    const artRetry = await artResponse.json() as {
+      plan: { rerunRoles: string[]; artAssetIds: string[] | null };
+    };
+    expect(artRetry.plan).toEqual({
+      sourceRunId: runId,
+      rerunRoles: ['logic', 'art'],
+      artAssetIds: ['player'],
+    });
+
+    const reviewRoot = path.join(sourceRoot, 'review', 'current');
+    mkdirSync(reviewRoot, { recursive: true });
+    const reviewedLevel = `${readFileSync(new URL('../fixtures/reference/level.json', import.meta.url), 'utf8').trim()}\n`;
+    writeFileSync(path.join(reviewRoot, 'logic.json'), stableJson({
+      schemaVersion: 1,
+      source: readFileSync(new URL('../fixtures/reference/rules.ts', import.meta.url), 'utf8'),
+    }));
+    writeFileSync(path.join(reviewRoot, 'level.json'), reviewedLevel);
+    writeFileSync(path.join(reviewRoot, 'art.json'), readFileSync(new URL('../fixtures/reference/art.json', import.meta.url)));
+    writeFileSync(path.join(sourceRoot, 'status.json'), stableJson({
+      schemaVersion: 1, runId, state: 'reviewing', requestCount: 4, activeElapsedMs: 100,
+      reasonCode: null, message: null,
+    }));
+    const iterateResponse = await fetch(`${server.origin}/api/iterate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: server.origin },
+      body: JSON.stringify({
+        runId,
+        agentInstructions: { 'art.enemy': 'Give this enemy a triangular red visor.' },
+      }),
+    });
+    expect(iterateResponse.status).toBe(202);
+    const iterated = await iterateResponse.json() as { runId: string };
+    expect(readFileSync(path.join(runsRoot, iterated.runId, 'retry-inputs', 'level.json'), 'utf8'))
+      .toBe(reviewedLevel);
   });
 
   it('serves reports on the control origin and games on a separate origin', async () => {

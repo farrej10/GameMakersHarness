@@ -129,7 +129,7 @@ Do not implement automatic upgrades to a more expensive model. Choose and record
 
 ## 4. Context packets
 
-Each call gets the protected role prompt, output schema, a compact task packet, and no previous conversation by default. A run may contain up to 2,000 UTF-8 bytes of optional user guidance per logic, level, art, or repair role. The orchestrator appends that guidance after the protected prompt; it does not replace the contract or validators. Persist the normalized guidance with the run and carry it into linked retries.
+Each call gets the protected role prompt, output schema, a compact task packet, and no previous conversation by default. A run may contain up to 2,000 UTF-8 bytes of optional user guidance per logic, level, art, repair, or individual art asset. The orchestrator appends role guidance after the protected prompt; it does not replace the contract or validators. Individual art guidance is attached only to that asset's image request. Persist normalized guidance with the run and compare it with the source run when creating a linked iteration.
 
 | Role | Include | Exclude |
 | --- | --- | --- |
@@ -198,6 +198,8 @@ Human implementation agents may change trusted files while implementing an assig
 Run states: `draft`, `awaiting-approval`, `generating`, `reviewing`, `integrating`, `verifying`, `repairing`, `verified`, `stopped`. Legal transitions must be encoded and tested. Approval is legal only from `awaiting-approval`; generation requires matching approval and cannot run twice concurrently. The optional `reviewing` state is durable and resumable. Interrupted active phases stop; automatic crash-resume is out of scope. A retry after a terminal failure creates a linked run with the same prompt, validated spec, approval hash, and public configuration rather than rewriting evidence. The control API exposes saved model attempts and validation errors read-only for inline diagnosis.
 
 The HTML report is generated from validated JSON/events. Escape every string before inserting it into HTML. Show prompt, approved spec, status, model IDs, actual overlapping worker intervals, verification results, repair diffs, evidence links, cost availability, and art fallback status. Failed or incomplete runs must not show a verified badge.
+
+A linked retry writes a generation plan before dispatch. Failed roles and roles whose guidance changed are rerun; accepted outputs from every other role are copied into the new run and emit `worker.reused`. A change to global art guidance reruns all four image requests. A change to one or more per-asset instructions reruns only those image requests and merges them with the accepted art contract. When the source is paused for review, the current reviewed artifacts are the reuse baseline so manual edits and uploaded sprites survive the iteration.
 
 For submission, curate one real run under `evidence/`, keep relative links intact, redact secrets, and label evidence provenance (`live`, `fixture`, or `injected-fault`). Do not invent worker timestamps, fixes, or transcripts.
 

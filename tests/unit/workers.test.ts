@@ -150,6 +150,39 @@ describe('generation workers', () => {
     expect(validateArtArtifact(result.output)).toEqual([]);
   });
 
+  it('regenerates one instructed sprite and preserves the other rendered assets', async () => {
+    const png = new PNG({ width: 64, height: 64 });
+    for (let y = 0; y < 64; y += 1) for (let x = 0; x < 64; x += 1) {
+      const offset = (y * 64 + x) * 4;
+      const entity = x >= 16 && x < 48 && y >= 16 && y < 48;
+      png.data[offset] = entity ? 30 : 255;
+      png.data[offset + 1] = entity ? 90 : 255;
+      png.data[offset + 2] = entity ? 220 : 255;
+      png.data[offset + 3] = 255;
+    }
+    const imageBase64 = PNG.sync.write(png).toString('base64');
+    const generateImage = vi.fn(async (_request: unknown, _signal: AbortSignal) =>
+      modelResult({ mimeType: 'image/png', imageBase64 }, 1));
+    const result = await runArtWorker({
+      ...common,
+      spec,
+      manifest,
+      client: { generate: vi.fn(), generateImage },
+      baseArt: art,
+      assetIds: ['player'],
+      assetInstructions: { player: 'Add a bright blue helmet.' },
+    });
+
+    expect(generateImage).toHaveBeenCalledOnce();
+    expect((generateImage.mock.calls[0]?.[0] as { prompt: string }).prompt).toContain(
+      'Add a bright blue helmet.',
+    );
+    expect(result.output.sprites).toHaveLength(4);
+    expect(result.artSource).toBe('generated');
+    expect(result.requests.map(({ request }) => request.requestId)).toEqual(['art_player']);
+    expect(validateArtArtifact(result.output)).toEqual([]);
+  });
+
   it('accepts valid logic, level, and art fixture responses', async () => {
     await expect(
       runLogicWorker({ ...common, spec, client: fake([logic]).client }),

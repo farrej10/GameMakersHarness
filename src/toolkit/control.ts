@@ -11,7 +11,8 @@ import { generateRun } from './orchestrator';
 import { EventWriter, readEvents } from './events';
 import { startStaticServer, type StaticServer } from './serve';
 import { artPreviewData, readReviewArtifacts, replaceReviewSprite, reviseReviewArtifact, type ReviewRole } from './review';
-import { readAgentInstructions, writeAgentInstructions, type AgentInstructions } from './instructions';
+import { artInstructionKeys, normalizeAgentInstructions, readAgentInstructions, writeAgentInstructions, type AgentInstructions } from './instructions';
+import { writeGenerationPlan, type ArtAssetId, type GenerationPlan, type GenerationRole } from './generation-plan';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RUN_ID = /^\d{8}T\d{6}Z-[0-9a-f]{8}$/u;
@@ -86,14 +87,17 @@ function runProgress(runRoot: string): Record<string, unknown> {
       (event) => event.role === role && (
         event.type === 'worker.started' ||
         event.type === 'worker.completed' ||
+        event.type === 'worker.reused' ||
         event.type === 'worker.failed'
       ),
     );
     const latest = relevant.at(-1);
     return {
       role,
-      status: latest?.type === 'worker.completed'
-        ? 'completed'
+      status: latest?.type === 'worker.reused'
+        ? 'reused'
+        : latest?.type === 'worker.completed'
+          ? 'completed'
         : latest?.type === 'worker.failed'
           ? 'failed'
           : latest?.type === 'worker.started'
@@ -101,7 +105,7 @@ function runProgress(runRoot: string): Record<string, unknown> {
             : 'waiting',
       startedAt: relevant.find((event) => event.type === 'worker.started')?.at ?? null,
       finishedAt: relevant.findLast(
-        (event) => event.type === 'worker.completed' || event.type === 'worker.failed',
+        (event) => event.type === 'worker.completed' || event.type === 'worker.reused' || event.type === 'worker.failed',
       )?.at ?? null,
     };
   });
@@ -182,7 +186,9 @@ function runOutputs(runRoot: string): Record<string, unknown> {
     : [];
   const workers = ['spec', 'logic', 'level', 'art', 'repair'].map((role) => {
     const roleEvents = events.filter((event) => event.role === role);
-    const completed = roleEvents.findLast((event) => event.type === 'worker.completed');
+    const completed = roleEvents.findLast(
+      (event) => event.type === 'worker.completed' || event.type === 'worker.reused',
+    );
     const completedData = completed?.data as { artifactPath?: string } | undefined;
     const accepted = completedData?.artifactPath
       ? readJsonFile(path.join(runRoot, completedData.artifactPath))
@@ -232,16 +238,68 @@ function retryStoppedRun(
   runsRoot: string,
   sourceRunId: string,
   requestedInstructions?: unknown,
-): { runId: string; hash: string; spec: GameSpec; agentInstructions: AgentInstructions } {
+  requireRerun = false,
+): { runId: string; hash: string; spec: GameSpec; agentInstructions: AgentInstructions; plan: GenerationPlan } {
   const sourceRoot = safeRunRoot(runsRoot, sourceRunId);
   const sourceStatus = readJsonFile(path.join(sourceRoot, 'status.json'));
-  if (sourceStatus?.state !== 'stopped') throw new Error('Only a stopped run can be retried.');
+  if (sourceStatus?.state !== 'stopped' && sourceStatus?.state !== 'reviewing') {
+    throw new Error('Only a stopped or reviewing run can create an iteration.');
+  }
   const spec = readJsonFile(path.join(sourceRoot, 'game-spec.json'));
   if (!validateGameSpec(spec)) throw new Error('The stopped run does not contain a valid specification.');
   const specText = stableJson(spec);
   const hash = sha256(specText);
   const sourceApproval = readJsonFile(path.join(sourceRoot, 'approval.json')) as Approval | null;
   if (sourceApproval?.specSha256 !== hash) throw new Error('The stopped run specification no longer matches its approval.');
+  const sourceEventsPath = path.join(sourceRoot, 'events.jsonl');
+  const sourceEvents = existsSync(sourceEventsPath) ? readEvents(sourceEventsPath) : [];
+  const sourceInstructions = readAgentInstructions(sourceRoot);
+  const agentInstructions = normalizeAgentInstructions(requestedInstructions ?? sourceInstructions);
+  const acceptedPaths = Object.fromEntries(
+    (['logic', 'level', 'art'] as const).map((role) => {
+      const reviewedPath = `review/current/${role}.json`;
+      if (sourceStatus?.state === 'reviewing' && existsSync(path.join(sourceRoot, reviewedPath))) {
+        return [role, reviewedPath];
+      }
+      const repaired = sourceEvents.findLast(
+        (event) => event.type === 'repair.completed' &&
+          (event.data as { owner?: string }).owner === role,
+      );
+      const completed = sourceEvents.findLast(
+        (event) => event.role === role && event.type === 'worker.completed',
+      );
+      const event = repaired ?? completed;
+      return [role, (event?.data as { artifactPath?: string } | undefined)?.artifactPath ?? null];
+    }),
+  ) as Record<GenerationRole, string | null>;
+  const failedRoles = new Set<GenerationRole>(
+    sourceEvents
+      .filter((event) => event.type === 'worker.failed' && (
+        event.role === 'logic' || event.role === 'level' || event.role === 'art'
+      ))
+      .map((event) => event.role as GenerationRole),
+  );
+  for (const role of ['logic', 'level'] as const) {
+    if (agentInstructions[role] !== sourceInstructions[role]) failedRoles.add(role);
+  }
+  const changedArtAssets = artInstructionKeys
+    .filter((key) => agentInstructions[key] !== sourceInstructions[key])
+    .map((key) => key.slice(4) as ArtAssetId);
+  const rerunAllArt = failedRoles.has('art') || agentInstructions.art !== sourceInstructions.art;
+  if (rerunAllArt || changedArtAssets.length) failedRoles.add('art');
+  for (const role of ['logic', 'level', 'art'] as const) {
+    if (!acceptedPaths[role]) failedRoles.add(role);
+  }
+  const plan: GenerationPlan = {
+    sourceRunId,
+    rerunRoles: [...failedRoles],
+    artAssetIds: failedRoles.has('art') && !rerunAllArt && acceptedPaths.art && changedArtAssets.length
+      ? changedArtAssets
+      : null,
+  };
+  if (requireRerun && plan.rerunRoles.length === 0) {
+    throw new Error('Change logic, level, art, or individual sprite instructions before regenerating.');
+  }
   let runId: string;
   let runRoot: string;
   do {
@@ -268,16 +326,21 @@ function retryStoppedRun(
     reasonCode: null,
     message: null,
   }));
-  const agentInstructions = writeAgentInstructions(
-    runRoot,
-    requestedInstructions ?? readAgentInstructions(sourceRoot),
-  );
+  writeAgentInstructions(runRoot, agentInstructions);
+  const retryInputs = path.join(runRoot, 'retry-inputs');
+  mkdirSync(retryInputs, { recursive: true });
+  for (const role of ['logic', 'level', 'art'] as const) {
+    const relative = acceptedPaths[role];
+    if (!relative) continue;
+    writeFileSync(path.join(retryInputs, `${role}.json`), readFileSync(path.join(sourceRoot, relative)));
+  }
+  writeGenerationPlan(runRoot, plan);
   const events = new EventWriter(runId, path.join(runRoot, 'events.jsonl'));
   events.append({ type: 'run.created', role: null, attempt: null, data: { promptPath: 'prompt.txt', configPath: 'config.json' } });
   events.append({ type: 'spec.proposed', role: 'spec', attempt: null, data: { specPath: 'game-spec.json', specSha256: hash } });
   events.append({ type: 'spec.approved', role: null, attempt: null, data: { specSha256: hash } });
   events.append({ type: 'run.retried', role: null, attempt: null, data: { sourceRunId } });
-  return { runId, hash, spec, agentInstructions };
+  return { runId, hash, spec, agentInstructions, plan };
 }
 
 function page(): string {
@@ -296,28 +359,30 @@ function enhancedPage(): string {
 
 function workbenchPage(): string {
   return String.raw`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agentic Game Maker</title><style>
-body{font:16px system-ui;max-width:1100px;margin:auto;padding:2rem;background:#eef5ef;color:#15251c}textarea{width:100%;box-sizing:border-box;padding:.8rem;font:14px ui-monospace,monospace}button{padding:.65rem 1rem;margin:.35rem}.row,.agents,.sprites{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}.card{padding:1rem;margin:1rem 0;border:1px solid #789;border-radius:.6rem;background:#fff}.agent{padding:.6rem .8rem;border:1px solid #789;border-radius:.5rem;cursor:pointer}.completed{background:#eafff0}.running{background:#fff8df}.failed{background:#fff0f0}.sprites figure{margin:.4rem;padding:.6rem;border:1px solid #9ab;border-radius:.5rem}.sprites img{display:block;width:128px;height:128px;image-rendering:pixelated;background:#ccd}iframe{width:100%;height:760px;border:1px solid #789}#status{font-weight:700}.help{color:#496356}details{margin:.7rem 0}input[type=number]{width:9rem;padding:.4rem}.spinner{display:inline-block;width:1rem;height:1rem;margin-right:.45rem;border:3px solid #b8c9bd;border-top-color:#287548;border-radius:50%;vertical-align:-.2rem;animation:spin .75s linear infinite}.spinner[hidden]{display:none}.agent.running::before{content:'';display:inline-block;width:.7rem;height:.7rem;margin-right:.4rem;border:2px solid #c9ad64;border-top-color:#6d510c;border-radius:50%;animation:spin .75s linear infinite}.output{border-left:4px solid #789;padding:.7rem;margin:.7rem 0}.output pre{max-height:26rem;overflow:auto;white-space:pre-wrap;background:#f2f5f3;padding:.8rem}.error-text{color:#9d2020}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body>
+body{font:16px system-ui;max-width:1100px;margin:auto;padding:2rem;background:#eef5ef;color:#15251c}textarea{width:100%;box-sizing:border-box;padding:.8rem;font:14px ui-monospace,monospace}button{padding:.65rem 1rem;margin:.35rem}.row,.agents,.sprites{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}.card{padding:1rem;margin:1rem 0;border:1px solid #789;border-radius:.6rem;background:#fff}.agent{padding:.6rem .8rem;border:1px solid #789;border-radius:.5rem;cursor:pointer}.completed{background:#eafff0}.reused{background:#e8f3ff}.running{background:#fff8df}.failed{background:#fff0f0}.sprites figure{margin:.4rem;padding:.6rem;border:1px solid #9ab;border-radius:.5rem}.sprites img{display:block;width:128px;height:128px;image-rendering:pixelated;background:#ccd}iframe{width:100%;height:760px;border:1px solid #789}#status{font-weight:700}.help{color:#496356}details{margin:.7rem 0}input[type=number]{width:9rem;padding:.4rem}.spinner{display:inline-block;width:1rem;height:1rem;margin-right:.45rem;border:3px solid #b8c9bd;border-top-color:#287548;border-radius:50%;vertical-align:-.2rem;animation:spin .75s linear infinite}.spinner[hidden]{display:none}.agent.running::before{content:'';display:inline-block;width:.7rem;height:.7rem;margin-right:.4rem;border:2px solid #c9ad64;border-top-color:#6d510c;border-radius:50%;animation:spin .75s linear infinite}.output{border-left:4px solid #789;padding:.7rem;margin:.7rem 0}.output pre{max-height:26rem;overflow:auto;white-space:pre-wrap;background:#f2f5f3;padding:.8rem}.error-text{color:#9d2020}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body>
 <h1>Agentic Game Maker</h1><p>Edit the description at any time to start another iteration. The optional review gate pauses after the agents finish so every artifact can be changed before the build.</p>
 <section class="card"><label for="runs"><strong>Open an existing run</strong></label><div class="row"><select id="runs"><option value="">Loading runs…</option></select><button id="load-run">Open run</button></div></section>
 <form id="spec-form" class="card"><label for="prompt"><strong>Game description</strong></label><textarea id="prompt" rows="6" maxlength="4000" required></textarea><div class="row"><label>Seed <input id="seed" type="number" min="0" max="2147483647" value="42"></label><button>Create specification</button></div></form>
 <section class="card"><h2>Design summary</h2><div id="mechanics">No proposal yet.</div><details open><summary>Editable specification JSON</summary><textarea id="spec" rows="20" disabled></textarea></details><button id="save-spec" disabled>Validate and save spec edits</button><button id="approve" disabled>Approve exact spec</button></section>
-<details id="agent-instructions" class="card"><summary><strong>Agent instructions (optional)</strong></summary><p class="help">These are appended to the harness-owned contract prompt and saved with this run. Use them to steer one agent without weakening validation.</p><label for="instruction-logic">Logic agent</label><textarea id="instruction-logic" rows="4" maxlength="2000" placeholder="Example: Follow the supplied TypeScript example exactly and do not add prose."></textarea><label for="instruction-level">Level agent</label><textarea id="instruction-level" rows="4" maxlength="2000" placeholder="Example: Put the exit in the lower-right and keep the center open."></textarea><label for="instruction-art">Art agent</label><textarea id="instruction-art" rows="4" maxlength="2000" placeholder="Example: Use a chunky top-down arcade style with strong silhouettes."></textarea><label for="instruction-repair">Repair agent</label><textarea id="instruction-repair" rows="4" maxlength="2000" placeholder="Example: Make the smallest valid replacement that addresses the failing check."></textarea></details>
+<details id="agent-instructions" class="card"><summary><strong>Agent instructions (optional)</strong></summary><p class="help">These are appended to the harness-owned contract prompt and saved with this run. Use them to steer one agent without weakening validation.</p><label for="instruction-logic">Logic agent</label><textarea id="instruction-logic" rows="4" maxlength="2000" placeholder="Example: Follow the supplied TypeScript example exactly and do not add prose."></textarea><label for="instruction-level">Level agent</label><textarea id="instruction-level" rows="4" maxlength="2000" placeholder="Example: Put the exit in the lower-right and keep the center open."></textarea><label for="instruction-art">All art (changing this regenerates all four sprites)</label><textarea id="instruction-art" rows="4" maxlength="2000" placeholder="Example: Use a chunky top-down arcade style with strong silhouettes."></textarea><details><summary>Individual sprite instructions</summary><label for="instruction-art-player">Player sprite</label><textarea id="instruction-art-player" rows="3" maxlength="2000"></textarea><label for="instruction-art-collectible">Collectible sprite</label><textarea id="instruction-art-collectible" rows="3" maxlength="2000"></textarea><label for="instruction-art-enemy">Enemy sprite</label><textarea id="instruction-art-enemy" rows="3" maxlength="2000"></textarea><label for="instruction-art-exit">Exit sprite</label><textarea id="instruction-art-exit" rows="3" maxlength="2000"></textarea></details><label for="instruction-repair">Repair agent</label><textarea id="instruction-repair" rows="4" maxlength="2000" placeholder="Example: Make the smallest valid replacement that addresses the failing check."></textarea></details>
 <section class="card"><h2>Agent progress</h2><p class="help">Select an agent to inspect its accepted output, raw attempts, and validation errors.</p><div id="agents" class="agents"></div><label><input id="review-gate" type="checkbox"> Pause to review agent outputs before building</label><br><label><input id="demo-fault" type="checkbox"> Demonstrate autonomous repair</label><br><button id="generate" disabled>Generate and verify</button><p><span id="spinner" class="spinner" hidden aria-hidden="true"></span><span id="status">Idle</span></p></section>
 <details id="outputs" class="card" hidden><summary><strong>Agent outputs and errors</strong></summary><div id="output-list"></div><button id="retry" hidden>Retry failed run with current agent instructions</button></details>
-<section id="review" class="card" hidden><h2>Agent output review</h2><p class="help">Each save creates a numbered revision. Original agent outputs remain in the run evidence.</p><details open><summary>Game logic agent</summary><textarea id="logic" rows="22"></textarea><button data-save="logic">Validate and save logic</button></details><details><summary>Level agent</summary><textarea id="level" rows="18"></textarea><button data-save="level">Validate and save level</button></details><details open><summary>Art agent</summary><div id="sprites" class="sprites"></div><details><summary>Editable art contract JSON</summary><textarea id="art" rows="14"></textarea><button data-save="art">Validate and save art contract</button></details></details><button id="continue">Build and verify selected revisions</button></section>
+<section id="review" class="card" hidden><h2>Agent output review</h2><p class="help">Each save creates a numbered revision. Original agent outputs remain in the run evidence.</p><details open><summary>Game logic agent</summary><textarea id="logic" rows="22"></textarea><button data-save="logic">Validate and save logic</button></details><details><summary>Level agent</summary><textarea id="level" rows="18"></textarea><button data-save="level">Validate and save level</button></details><details open><summary>Art agent</summary><div id="sprites" class="sprites"></div><details><summary>Editable art contract JSON</summary><textarea id="art" rows="14"></textarea><button data-save="art">Validate and save art contract</button></details></details><button id="regenerate-instructed">Regenerate only agents with changed instructions</button><button id="continue">Build and verify selected revisions</button></section>
 <p><a id="report" hidden>Execution report</a></p><iframe id="game" title="Verified game" hidden></iframe>
 <script type="module">
 let current=null,pollTimer=null;const q=s=>document.querySelector(s),status=q('#status'),spinner=q('#spinner');
+const instructionFields={logic:'instruction-logic',level:'instruction-level',art:'instruction-art',repair:'instruction-repair','art.player':'instruction-art-player','art.collectible':'instruction-art-collectible','art.enemy':'instruction-art-enemy','art.exit':'instruction-art-exit'};
 async function call(url,body){const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error||'Request failed');return value}
 function setBusy(message,busy=true){status.textContent=message;spinner.hidden=!busy}
 function shortMessage(value){const text=String(value||'');return text.length>220?text.slice(0,220)+'…':text}
-function gatherInstructions(){return Object.fromEntries(['logic','level','art','repair'].map(role=>[role,q('#instruction-'+role).value]).filter(([,value])=>value.trim()))}
-function loadInstructions(value={}){for(const role of ['logic','level','art','repair'])q('#instruction-'+role).value=value[role]||''}
+function gatherInstructions(){return Object.fromEntries(Object.entries(instructionFields).map(([key,id])=>[key,q('#'+id).value]).filter(([,value])=>value.trim()))}
+function loadInstructions(value={}){for(const [key,id] of Object.entries(instructionFields))q('#'+id).value=value[key]||''}
 function renderSpec(v){q('#spec').value=JSON.stringify(v,null,2);const parts=[];if(v.identity)parts.push(v.identity.fantasy);if(v.player)parts.push('Movement: '+v.player.movement.mode);if(v.objective)parts.push('Objective: '+v.objective.mode);if(v.timer)parts.push('Timer: '+v.timer.mode);q('#mechanics').textContent=parts.join(' · ')||v.title||'Specification ready.'}
 function renderProgress(run){const items=[...(run.workers||[])];if(run.repair)items.push({role:'repair',status:run.repair.status});q('#agents').replaceChildren(...items.map(item=>{const n=document.createElement('button');n.type='button';n.className='agent '+item.status;n.textContent=item.role+': '+item.status;n.title='Inspect '+item.role+' output';n.addEventListener('click',()=>void loadOutputs(item.role).catch(e=>setBusy(e.message,false)));return n}))}
 function outputBlock(title,value,className=''){const box=document.createElement('div'),heading=document.createElement('h4'),pre=document.createElement('pre');box.className='output '+className;heading.textContent=title;pre.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);box.append(heading,pre);return box}
-async function loadOutputs(openRole){setBusy('Loading agent outputs…');const response=await fetch('/api/run/'+current.runId+'/outputs'),data=await response.json();if(!response.ok)throw new Error(data.error);const list=q('#output-list');list.replaceChildren();for(const worker of data.workers){const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement('div');details.open=worker.role===openRole;summary.textContent=worker.role+' agent';if(worker.errors.length)body.append(outputBlock('Validation and worker errors',worker.errors.join('\n\n'),'error-text'));if(worker.accepted)body.append(outputBlock('Accepted output',worker.accepted));for(const attempt of worker.attempts)body.append(outputBlock('Raw model attempt '+attempt.requestId+' · '+attempt.model,attempt.output));if(['logic','level','art','repair'].includes(worker.role)){const adjust=document.createElement('button');adjust.type='button';adjust.textContent='Adjust '+worker.role+' instructions';adjust.addEventListener('click',()=>{q('#agent-instructions').open=true;q('#instruction-'+worker.role).focus();q('#agent-instructions').scrollIntoView({behavior:'smooth',block:'start'})});body.append(adjust)}if(!worker.accepted&&!worker.attempts.length&&!worker.errors.length)body.prepend('No output was recorded.');details.append(summary,body);list.append(details)}if(Object.keys(data.previews||{}).length){const heading=document.createElement('h3'),images=document.createElement('div');heading.textContent='Rendered art output';images.className='sprites';for(const [id,src] of Object.entries(data.previews)){const fig=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption');img.src=src;img.alt=id+' sprite';cap.textContent=id;fig.append(img,cap);images.append(fig)}list.append(heading,images)}q('#outputs').hidden=false;q('#outputs').open=Boolean(openRole);setBusy('Outputs loaded.',false)}
-async function loadReview(){setBusy('Loading review artifacts…');const response=await fetch('/api/run/'+current.runId+'/artifacts'),r=await response.json();if(!response.ok)throw new Error(r.error);q('#logic').value=r.artifacts.logic.source;q('#level').value=JSON.stringify(r.artifacts.level,null,2);q('#art').value=JSON.stringify(r.artifacts.art,null,2);const box=q('#sprites');box.replaceChildren();for(const [id,src] of Object.entries(r.previews)){const fig=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption'),input=document.createElement('input');img.src=src;img.alt=id+' sprite';cap.textContent=id;input.type='file';input.accept='image/png';input.addEventListener('change',async()=>{const file=input.files&&input.files[0];if(!file)return;try{setBusy('Uploading '+id+' sprite…');const base64=await new Promise(ok=>{const reader=new FileReader();reader.onload=()=>ok(String(reader.result).split(',')[1]);reader.readAsDataURL(file)});await call('/api/art/upload',{runId:current.runId,assetId:id,pngBase64:base64});await loadReview();setBusy('Saved new '+id+' art revision.',false)}catch(e){setBusy(e.message,false)}});fig.append(img,cap,input);box.append(fig)}q('#review').hidden=false;setBusy('Review agent outputs, edit them, then continue.',false)}
+async function loadOutputs(openRole){setBusy('Loading agent outputs…');const response=await fetch('/api/run/'+current.runId+'/outputs'),data=await response.json();if(!response.ok)throw new Error(data.error);const list=q('#output-list');list.replaceChildren();for(const worker of data.workers){const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement('div');details.open=worker.role===openRole;summary.textContent=worker.role+' agent';if(worker.errors.length)body.append(outputBlock('Validation and worker errors',worker.errors.join('\n\n'),'error-text'));if(worker.accepted)body.append(outputBlock('Accepted output',worker.accepted));for(const attempt of worker.attempts)body.append(outputBlock('Raw model attempt '+attempt.requestId+' · '+attempt.model,attempt.output));if(['logic','level','art','repair'].includes(worker.role)){const adjust=document.createElement('button');adjust.type='button';adjust.textContent='Adjust '+worker.role+' instructions';adjust.addEventListener('click',()=>focusInstruction(worker.role));body.append(adjust)}if(!worker.accepted&&!worker.attempts.length&&!worker.errors.length)body.prepend('No output was recorded.');details.append(summary,body);list.append(details)}if(Object.keys(data.previews||{}).length){const heading=document.createElement('h3'),images=document.createElement('div');heading.textContent='Rendered art output';images.className='sprites';for(const [id,src] of Object.entries(data.previews)){const fig=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption'),adjust=document.createElement('button');img.src=src;img.alt=id+' sprite';cap.textContent=id;adjust.type='button';adjust.textContent='Adjust only '+id;adjust.addEventListener('click',()=>focusInstruction('art.'+id));fig.append(img,cap,adjust);images.append(fig)}list.append(heading,images)}q('#outputs').hidden=false;q('#outputs').open=Boolean(openRole);setBusy('Outputs loaded.',false)}
+function focusInstruction(key){q('#agent-instructions').open=true;const field=q('#'+instructionFields[key]);field.focus();field.scrollIntoView({behavior:'smooth',block:'center'})}
+async function loadReview(){setBusy('Loading review artifacts…');const response=await fetch('/api/run/'+current.runId+'/artifacts'),r=await response.json();if(!response.ok)throw new Error(r.error);q('#logic').value=r.artifacts.logic.source;q('#level').value=JSON.stringify(r.artifacts.level,null,2);q('#art').value=JSON.stringify(r.artifacts.art,null,2);const box=q('#sprites');box.replaceChildren();for(const [id,src] of Object.entries(r.previews)){const fig=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption'),input=document.createElement('input'),adjust=document.createElement('button');img.src=src;img.alt=id+' sprite';cap.textContent=id;input.type='file';input.accept='image/png';adjust.type='button';adjust.textContent='Instructions for '+id;adjust.addEventListener('click',()=>focusInstruction('art.'+id));input.addEventListener('change',async()=>{const file=input.files&&input.files[0];if(!file)return;try{setBusy('Uploading '+id+' sprite…');const base64=await new Promise(ok=>{const reader=new FileReader();reader.onload=()=>ok(String(reader.result).split(',')[1]);reader.readAsDataURL(file)});await call('/api/art/upload',{runId:current.runId,assetId:id,pngBase64:base64});await loadReview();setBusy('Saved new '+id+' art revision.',false)}catch(e){setBusy(e.message,false)}});fig.append(img,cap,adjust,input);box.append(fig)}q('#review').hidden=false;setBusy('Review agent outputs, edit them, then continue.',false)}
 async function poll(){try{const response=await fetch('/api/run/'+current.runId),run=await response.json();if(!response.ok)throw new Error(run.error);renderProgress(run);const active=['generating','integrating','verifying','repairing'].includes(run.state);setBusy(run.state+(run.message?' · '+shortMessage(run.message):''),active);if(run.state==='reviewing'){clearInterval(pollTimer);await Promise.all([loadReview(),loadOutputs()])}if(run.state==='verified'||run.state==='stopped'){clearInterval(pollTimer);q('#report').href='/report/'+current.runId;q('#report').hidden=false;await loadOutputs();q('#retry').hidden=run.state!=='stopped';if(run.state==='verified'){setBusy('Starting verified game preview…');const play=await call('/api/play',{runId:current.runId});q('#game').src=play.origin;q('#game').hidden=false;setBusy('Verified.',false)}else setBusy('Stopped · '+shortMessage(run.message||'Inspect the agent output, then retry.'),false)}}catch(e){clearInterval(pollTimer);setBusy(e.message,false)}}
 function beginPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>void poll(),800);void poll()}
 async function refreshRuns(){const response=await fetch('/api/runs'),data=await response.json();if(!response.ok)throw new Error(data.error);const select=q('#runs');select.replaceChildren();for(const run of data.runs){const option=document.createElement('option');option.value=run.runId;option.textContent=(run.title||run.runId)+' · '+run.state+' · '+run.runId;select.append(option)}if(!data.runs.length){const option=document.createElement('option');option.textContent='No runs yet';option.value='';select.append(option)}}
@@ -329,6 +394,7 @@ q('#approve').addEventListener('click',async()=>{try{setBusy('Approving specific
 q('#generate').addEventListener('click',async()=>{try{setBusy('Starting parallel agents…');await call('/api/generate',{runId:current.runId,pauseForReview:q('#review-gate').checked,demoFault:q('#demo-fault').checked?'logic-victory':null,agentInstructions:gatherInstructions()});q('#generate').disabled=true;beginPoll()}catch(e){setBusy(e.message,false)}});
 for(const b of document.querySelectorAll('[data-save]'))b.addEventListener('click',async()=>{const role=b.dataset.save;try{setBusy('Validating '+role+' revision…');const artifact=role==='logic'?{schemaVersion:1,source:q('#logic').value}:JSON.parse(q('#'+role).value);const r=await call('/api/artifact/edit',{runId:current.runId,role,artifact});await loadReview();setBusy('Saved '+role+' revision '+r.revision+'.',false)}catch(e){setBusy(e.message,false)}});
 q('#continue').addEventListener('click',async()=>{try{setBusy('Starting build and verification…');await call('/api/continue',{runId:current.runId,agentInstructions:gatherInstructions()});q('#review').hidden=true;beginPoll()}catch(e){setBusy(e.message,false)}});
+q('#regenerate-instructed').addEventListener('click',async()=>{try{setBusy('Planning targeted agent iteration…');const iterated=await call('/api/iterate',{runId:current.runId,agentInstructions:gatherInstructions()});current=iterated;loadInstructions(iterated.agentInstructions);renderSpec(current.spec);q('#review').hidden=true;q('#outputs').hidden=true;q('#outputs').open=false;await refreshRuns();q('#runs').value=current.runId;setBusy('Rerunning '+iterated.plan.rerunRoles.join(', ')+'; reusing unchanged outputs…');beginPoll()}catch(e){setBusy(e.message,false)}});
 q('#retry').addEventListener('click',async()=>{try{setBusy('Creating retry run…');const retried=await call('/api/retry',{runId:current.runId,pauseForReview:q('#review-gate').checked,agentInstructions:gatherInstructions()});current=retried;loadInstructions(retried.agentInstructions);renderSpec(current.spec);q('#retry').hidden=true;q('#outputs').hidden=true;q('#outputs').open=false;q('#report').hidden=true;q('#game').hidden=true;await refreshRuns();q('#runs').value=current.runId;beginPoll()}catch(e){setBusy(e.message,false)}});
 void refreshRuns().catch(e=>setBusy(e.message,false));
 </script></body></html>`;
@@ -507,6 +573,16 @@ export async function startControlServer(options: {
           .catch(() => undefined)
           .finally(() => active.delete(retried.runId));
         jsonResponse(response, 202, retried);
+        return;
+      }
+      if (url.pathname === '/api/iterate') {
+        if (typeof body.runId !== 'string' || !RUN_ID.test(body.runId)) throw new Error('A valid runId is required.');
+        const iterated = retryStoppedRun(runsRoot, body.runId, body.agentInstructions, true);
+        active.add(iterated.runId);
+        void actions.generate(iterated.runId, { pauseForReview: true })
+          .catch(() => undefined)
+          .finally(() => active.delete(iterated.runId));
+        jsonResponse(response, 202, iterated);
         return;
       }
       if (url.pathname === '/api/play') {

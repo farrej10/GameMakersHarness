@@ -39,7 +39,8 @@ import { runLevelWorker, type LevelWorkerResult } from './workers/level';
 import { runLogicWorker, type LogicWorkerResult } from './workers/logic';
 import { validateLogicArtifact } from './validate';
 import { readReviewArtifacts, writeReviewArtifacts } from './review';
-import { applyAgentInstruction, readAgentInstructions, type AgentInstructionRole } from './instructions';
+import { applyAgentInstruction, artAssetInstructions, readAgentInstructions, type AgentInstructionRole } from './instructions';
+import { readGenerationPlan, type GenerationRole } from './generation-plan';
 import {
   RepairRejectedError,
   runRepairWorker,
@@ -303,12 +304,47 @@ export async function generateRun(options: {
         data: { artifactsPath: 'review/current' },
       });
     } else {
-      const jobs = [
-        ['logic', () => runLogicWorker({ spec, model: config.models.logic, systemPrompt: prompt('logic'), client, signal })],
-        ['level', () => runLevelWorker({ spec, model: config.models.level, systemPrompt: prompt('level'), client, signal })],
-        ['art', () => runArtWorker({ spec, manifest, model: config.models.art, systemPrompt: prompt('art'), client, signal })],
-      ] as const;
-      const executeJob = async ([role, start]: (typeof jobs)[number]) => {
+      const plan = readGenerationPlan(runRoot);
+      const selected: Partial<{ logic: LogicOutput; level: LevelOutput; art: ArtOutput }> = {};
+      if (plan) {
+        for (const role of ['logic', 'level', 'art'] as const) {
+          if (plan.rerunRoles.includes(role)) continue;
+          const artifactPath = `retry-inputs/${role}.json`;
+          selected[role] = JSON.parse(readFileSync(path.join(runRoot, artifactPath), 'utf8')) as never;
+          events.append({
+            type: 'worker.reused', role, attempt: null,
+            data: { sourceRunId: plan.sourceRunId, artifactPath },
+          });
+        }
+      }
+      const artBase = plan?.artAssetIds
+        ? JSON.parse(readFileSync(path.join(runRoot, 'retry-inputs', 'art.json'), 'utf8')) as ArtOutput
+        : undefined;
+      const jobs: Array<{ role: GenerationRole; start: () => Promise<CompletedWorker> }> = [];
+      const shouldRun = (role: GenerationRole) => !plan || plan.rerunRoles.includes(role);
+      if (shouldRun('logic')) jobs.push({
+        role: 'logic',
+        start: () => runLogicWorker({ spec, model: config.models.logic, systemPrompt: prompt('logic'), client, signal }),
+      });
+      if (shouldRun('level')) jobs.push({
+        role: 'level',
+        start: () => runLevelWorker({ spec, model: config.models.level, systemPrompt: prompt('level'), client, signal }),
+      });
+      if (shouldRun('art')) jobs.push({
+        role: 'art',
+        start: () => runArtWorker({
+          spec,
+          manifest,
+          model: config.models.art,
+          systemPrompt: prompt('art'),
+          client,
+          signal,
+          baseArt: artBase,
+          assetIds: plan?.artAssetIds ?? undefined,
+          assetInstructions: artAssetInstructions(agentInstructions),
+        }),
+      });
+      const executeJob = async ({ role, start }: (typeof jobs)[number]) => {
         events.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
         try {
           const completed = await start();
@@ -341,16 +377,23 @@ export async function generateRun(options: {
         .map((entry) => entry.reason instanceof Error ? entry.reason : new Error(String(entry.reason)));
       status.requestCount = Math.max(status.requestCount + jobs.length, budget.count);
       if (failures.length) throw failures[0];
-      const logic = (settled[0] as PromiseFulfilledResult<LogicWorkerResult>).value;
-      const level = (settled[1] as PromiseFulfilledResult<LevelWorkerResult>).value;
-      const art = (settled[2] as PromiseFulfilledResult<ArtWorkerResult>).value;
-      currentLogic = logic.output;
-      currentLevel = level.output;
-      currentArt = art.output;
-      if (art.artSource === 'fallback') {
+      let generatedArt: ArtWorkerResult | undefined;
+      settled.forEach((entry, index) => {
+        if (entry.status !== 'fulfilled') return;
+        const role = jobs[index]!.role;
+        selected[role] = entry.value.output as never;
+        if (role === 'art') generatedArt = entry.value as ArtWorkerResult;
+      });
+      if (!selected.logic || !selected.level || !selected.art) {
+        throw new Error('Generation plan did not produce all required artifacts.');
+      }
+      currentLogic = selected.logic;
+      currentLevel = selected.level;
+      currentArt = selected.art;
+      if (generatedArt?.artSource === 'fallback') {
         events.append({
           type: 'art.fallback', role: 'art', attempt: null,
-          data: { reason: boundedMessage(art.fallbackReason ?? 'Generated art was unavailable.', 1_000) },
+          data: { reason: boundedMessage(generatedArt.fallbackReason ?? 'Generated art was unavailable.', 1_000) },
         });
       }
     }

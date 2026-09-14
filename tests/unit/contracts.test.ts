@@ -111,6 +111,17 @@ describe('GameSpec contract', () => {
     expect(validateGameSpec(value)).toBe(true);
   });
 
+  it('accepts a bounded custom victory condition', () => {
+    const value = structuredClone(validSpec) as Record<string, any>;
+    value.objective = {
+      mode: 'custom',
+      winCondition: 'Win by reaching the exit or by surviving for 30 seconds.',
+      survivalTicks: 1800,
+    };
+    value.timer = { mode: 'elapsed', label: 'Escape time' };
+    expect(validateGameSpec(value)).toBe(true);
+  });
+
   it('rejects animation timings outside the bounded profile', () => {
     const value = structuredClone(validSpec) as Record<string, any>;
     value.animationProfile.dash.durationMs = 1_000;

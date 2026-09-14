@@ -40,6 +40,7 @@ const ENUM_STRINGS = new Set([
   'collect-then-exit',
   'survive',
   'survive-then-exit',
+  'custom',
 ]);
 const ALLOWED_MATH_CALLS = new Set([
   'Math.sqrt',

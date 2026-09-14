@@ -27,7 +27,7 @@ Record evidence from both and identify which process each artifact demonstrates.
 | Geometry | Circular collisions; no interior walls, projectiles, doors, navigation mesh, or procedural terrain |
 | Collection | Touch in any order or a declared c1..cN route |
 | Enemy behavior | `chase`, horizontal/vertical patrol, or proximity `guard`; one family per game |
-| Victory | `collect-all`, `collect-then-exit`, timed `survive`, or timed `survive-then-exit` |
+| Victory | Four presets plus a bounded `custom` formula over collection, exit contact, and time |
 | World identity | Open, quadrants, lanes, or perimeter layout; none, darkness, or rising-danger pressure |
 | Animation cues | Bounded dash, damage, and collection styles, duration, color, and optional camera shake |
 | Defeat | Health reaches zero |
@@ -63,7 +63,7 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 9. Enemy contact removes one health when cooldown is inactive. Apply at most one damage event per tick even if several enemies overlap. Health cannot fall below zero.
 10. Damage cooldown is exactly 60 simulation ticks. First contact at tick T can damage again at T+60. Use integer tick comparisons.
 11. After movement and collisions: apply collection, then damage, then defeat, then check victory if still alive. Defeat wins a simultaneous lethal-contact/victory tie.
-12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive`: declared ticks elapse. `survive-then-exit`: declared ticks elapse and player overlaps the exit. Explicit seconds convert at exactly 60 ticks per second.
+12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive`: declared ticks elapse. `survive-then-exit`: declared ticks elapse and player overlaps the exit. `custom`: the approved formula may combine those observable conditions with AND or OR. Explicit seconds convert at exactly 60 ticks per second.
 13. Rising-danger pressure scales enemy policy speed gradually to a maximum 1.75 multiplier. Layout changes the arena's visual structure and guides level placement.
 14. A won/lost game freezes simulation. Restart creates a fresh copy of the approved generated level, resets score, health, stamina, cooldowns, tick count, and input, then returns to `ready`.
 15. Rendering derives dash, damage, and collection effects from before/after simulation snapshots. Effects expire on simulation ticks, clear on restart, and never change simulation state. Real-time camera shake is visual only.

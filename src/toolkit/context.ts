@@ -27,12 +27,17 @@ export function logicContext(system: string, spec: GameSpec): ContextPacket {
       enemyBehavior: spec.enemies.behavior,
       enemySpeed: spec.enemies.speed,
       objectiveMode: spec.objective.mode,
+      customWinCondition: spec.objective.mode === 'custom'
+        ? spec.objective.winCondition
+        : null,
       collectibleTarget: spec.collectibles.count,
       movement: spec.player.movement ?? { mode: 'standard' },
       collectionInteraction: spec.collectibles.interaction ?? 'touch',
       survivalTicks: spec.objective.mode === 'survive' || spec.objective.mode === 'survive-then-exit'
         ? spec.objective.survivalTicks
-        : 1200,
+        : spec.objective.mode === 'custom' && spec.objective.survivalTicks !== null
+          ? spec.objective.survivalTicks
+          : 1200,
       world: spec.world ?? { layout: 'open', pressure: 'none' },
     },
     exactImport: "import type { EnemyContext, VictoryContext, Vec2 } from './rule-types';",
@@ -43,7 +48,7 @@ export function logicContext(system: string, spec: GameSpec): ContextPacket {
     completeValidExample: {
       schemaVersion: 1,
       source:
-        "import type { EnemyContext, VictoryContext, Vec2 } from './rule-types';\n\nexport function getEnemyVelocity(context: EnemyContext): Vec2 {\n  if (context.behavior === 'chase' || context.behavior === 'guard') {\n    const dx = context.player.x - context.enemy.x;\n    const dy = context.player.y - context.enemy.y;\n    const distance = Math.hypot(dx, dy);\n    if (distance === 0) return { x: 0, y: 0 };\n    if (context.behavior === 'guard' && distance > 180) return { x: 0, y: 0 };\n    return { x: dx / distance * context.speed, y: dy / distance * context.speed };\n  }\n  if (context.behavior === 'vertical-patrol') {\n    if (context.enemy.y >= context.bounds.maxY) return { x: 0, y: -context.speed };\n    if (context.enemy.y <= context.bounds.minY) return { x: 0, y: context.speed };\n    return { x: 0, y: context.enemy.vy < 0 ? -context.speed : context.speed };\n  }\n  if (context.enemy.x >= context.bounds.maxX) return { x: -context.speed, y: 0 };\n  if (context.enemy.x <= context.bounds.minX) return { x: context.speed, y: 0 };\n  return { x: context.enemy.vx < 0 ? -context.speed : context.speed, y: 0 };\n}\n\nexport function isVictory(context: VictoryContext): boolean {\n  if (context.mode === 'survive') return context.elapsedTicks >= context.survivalTicks;\n  if (context.mode === 'survive-then-exit') return context.elapsedTicks >= context.survivalTicks && context.atExit;\n  const enough = context.score >= context.target;\n  return context.mode === 'collect-all' ? enough : enough && context.atExit;\n}\n",
+        "import type { EnemyContext, VictoryContext, Vec2 } from './rule-types';\n\nexport function getEnemyVelocity(context: EnemyContext): Vec2 {\n  if (context.behavior === 'chase' || context.behavior === 'guard') {\n    const dx = context.player.x - context.enemy.x;\n    const dy = context.player.y - context.enemy.y;\n    const distance = Math.hypot(dx, dy);\n    if (distance === 0) return { x: 0, y: 0 };\n    if (context.behavior === 'guard' && distance > 180) return { x: 0, y: 0 };\n    return { x: dx / distance * context.speed, y: dy / distance * context.speed };\n  }\n  if (context.behavior === 'vertical-patrol') {\n    if (context.enemy.y >= context.bounds.maxY) return { x: 0, y: -context.speed };\n    if (context.enemy.y <= context.bounds.minY) return { x: 0, y: context.speed };\n    return { x: 0, y: context.enemy.vy < 0 ? -context.speed : context.speed };\n  }\n  if (context.enemy.x >= context.bounds.maxX) return { x: -context.speed, y: 0 };\n  if (context.enemy.x <= context.bounds.minX) return { x: context.speed, y: 0 };\n  return { x: context.enemy.vx < 0 ? -context.speed : context.speed, y: 0 };\n}\n\nexport function isVictory(context: VictoryContext): boolean {\n  if (context.mode === 'survive') return context.elapsedTicks >= context.survivalTicks;\n  if (context.mode === 'survive-then-exit') return context.elapsedTicks >= context.survivalTicks && context.atExit;\n  if (context.mode === 'custom') return context.atExit || context.score >= context.target;\n  const enough = context.score >= context.target;\n  return context.mode === 'collect-all' ? enough : enough && context.atExit;\n}\n",
     },
   });
 }

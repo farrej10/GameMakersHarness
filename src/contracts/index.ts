@@ -34,6 +34,7 @@ export const ObjectiveModeSchema = Type.Union([
   Type.Literal('collect-then-exit'),
   Type.Literal('survive'),
   Type.Literal('survive-then-exit'),
+  Type.Literal('custom'),
 ]);
 export const AssetIdSchema = Type.Union([
   Type.Literal('player'),
@@ -103,6 +104,14 @@ export const GameSpecSchema = closedObject({
     closedObject({
       mode: Type.Literal('survive-then-exit'),
       survivalTicks: Type.Integer({ minimum: 600, maximum: 3600 }),
+    }),
+    closedObject({
+      mode: Type.Literal('custom'),
+      winCondition: NonEmptyText(240),
+      survivalTicks: Type.Union([
+        Type.Integer({ minimum: 600, maximum: 3600 }),
+        Type.Null(),
+      ]),
     }),
   ]),
   timer: Type.Optional(closedObject({
@@ -297,7 +306,7 @@ export type EnemyContext = Readonly<{
   }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit' | 'survive' | 'survive-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive' | 'survive-then-exit' | 'custom';
   score: number;
   target: number;
   atExit: boolean;

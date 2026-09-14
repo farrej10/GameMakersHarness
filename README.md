@@ -81,7 +81,7 @@ npm run game:serve -- --root runs/<run-id>/build --port 4173
 
 The exported build does not require an OpenRouter key.
 
-Generated games can combine standard, stamina sprint, or cooldown dash movement; touch or ordered collection; chase, horizontal patrol, vertical patrol, or guard enemies; collection, collection-and-exit, or survival-and-exit objectives; four placement layouts; and rising-danger or darkness themes. The spec also selects bounded dash, damage, and collection effects that the trusted Phaser renderer applies without changing simulation outcomes. The specification gate requires an identity brief and at least three material choices beyond the plain template.
+Generated games can combine standard, stamina sprint, or cooldown dash movement; touch or ordered collection; chase, horizontal patrol, vertical patrol, or guard enemies; four preset objectives or a custom AND/OR win formula over collection, exit contact, and time; four placement layouts; and rising-danger or darkness themes. The spec also selects bounded dash, damage, and collection effects that the trusted Phaser renderer applies without changing simulation outcomes. The specification gate requires an identity brief and at least three material choices beyond the plain template.
 
 ## Optional local control page
 

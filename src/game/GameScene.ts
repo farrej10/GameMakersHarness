@@ -29,6 +29,7 @@ import {
 } from '../runtime/state';
 import { FIXED_STEP_SECONDS, stepGame } from '../runtime/step';
 import { animationTicks, resolvedAnimationProfile } from './animation';
+import { shouldShowExit } from './objective';
 import { timerDisplay } from './timer';
 
 const STEP_MS = FIXED_STEP_SECONDS * 1_000;
@@ -426,6 +427,7 @@ export class GameScene extends Phaser.Scene {
             0.35,
           )
           .setStrokeStyle(4, color(palette[2], 0x88c070));
+    this.exitView.setVisible(shouldShowExit(this.currentSpec));
     this.entityLayer.add(this.exitView);
 
     for (const collectible of this.state.collectibles) {

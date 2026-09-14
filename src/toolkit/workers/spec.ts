@@ -23,14 +23,14 @@ function validationErrors(value: unknown, seed: number, originalPrompt: string):
       errors.push('/animationProfile is required for newly generated games');
     }
     const duration = originalPrompt.match(/\b(\d{1,3})\s*(seconds?|minutes?)\b/iu);
-    if (duration && (value.objective.mode === 'survive' || value.objective.mode === 'survive-then-exit')) {
+    if (duration && (value.objective.mode === 'survive' || value.objective.mode === 'survive-then-exit' || value.objective.mode === 'custom')) {
       const amount = Number(duration[1]);
       const expectedTicks = amount * (/minute/iu.test(duration[2]!) ? 3_600 : 60);
       if (value.objective.survivalTicks !== expectedTicks) {
         errors.push(`/objective/survivalTicks must preserve the requested duration: ${expectedTicks} ticks`);
       }
     }
-    if (/\bwin\b/iu.test(originalPrompt) && /\b(surviv\w*|timer)\b/iu.test(originalPrompt) && !/\b(exit|door|portal|gate|escape)\b/iu.test(originalPrompt) && value.objective.mode !== 'survive') {
+    if (/\bwin\b/iu.test(originalPrompt) && /\b(surviv\w*|timer)\b/iu.test(originalPrompt) && !/\b(exit|door|portal|gate|escape)\b/iu.test(originalPrompt) && value.objective.mode !== 'survive' && value.objective.mode !== 'custom') {
       errors.push('/objective/mode must be survive because the request does not require reaching an exit');
     }
     const differences = [

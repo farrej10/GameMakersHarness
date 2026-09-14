@@ -94,7 +94,7 @@ Constraints:
 - `palette`: exactly four distinct strings matching `^#[0-9A-Fa-f]{6}$`. Index 0 is background; indices 1-3 are sprite colors. Transparency is a separate pixel symbol.
 - Numeric bounds and enums are defined in SPEC section 5 and section 2.
 - Movement is `standard`, bounded `sprint`, or bounded `dash`; collection is `touch` or `ordered`.
-- Enemy behavior is chase, horizontal patrol, vertical patrol, or guard. Objectives are collect-all, collect-then-exit, or survive-then-exit with 600-3600 required survival ticks.
+- Enemy behavior is chase, horizontal patrol, vertical patrol, or guard. Objectives are collect-all, collect-then-exit, survive, survive-then-exit, or custom. Custom objectives contain an explicit `winCondition` over collection progress, exit contact, and elapsed time, plus nullable 600-3600 `survivalTicks`.
 - Layout is open, quadrants, lanes, or perimeter. Pressure is none, rising-danger, or darkness.
 - Identity contains bounded fantasy, signature mechanic, dramatic pressure, and pacing fields. The spec worker requires at least three material mechanic differences from the plain template.
 - New generations include an animation profile. Dash style is afterimage, streak, or burst with a 120-300 ms duration. Damage style is flash, shockwave, or flicker with a 150-400 ms duration and camera shake from 0 through 0.01. Collection style is pop, spark, or pulse with a 150-500 ms duration. Each cue has a six-digit hex color. The field remains optional in schema version 1 so preserved older runs remain verifiable; the current spec worker requires it.
@@ -187,7 +187,7 @@ export type EnemyContext = Readonly<{
   bounds: Readonly<{ minX: number; maxX: number; minY: number; maxY: number }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive' | 'survive-then-exit' | 'custom';
   score: number;
   target: number;
   atExit: boolean;
@@ -200,7 +200,7 @@ Both functions implement both enum modes, even if the current spec uses only one
 
 - Chase: velocity points from enemy to player, with magnitude `speed`. Coincident positions return zero velocity. Compute Euclidean length; do not multiply both axis signs by speed.
 - Horizontal patrol: y velocity zero; initially move right if previous x velocity is zero. At or beyond maxX move left; at or below minX move right. Otherwise retain previous x direction. Magnitude is speed. Runtime clamps position after integration.
-- Victory: score >= target; additionally require atExit for `collect-then-exit`. Survival mode requires elapsedTicks >= survivalTicks and atExit.
+- Victory: score >= target; additionally require atExit for `collect-then-exit`. `survive` requires elapsedTicks >= survivalTicks, while `survive-then-exit` also requires atExit. `custom` implements the approved textual formula using boolean combinations of score, target, atExit, elapsedTicks, and survivalTicks.
 - No I/O, timers, randomness, mutation of arguments, imports of runtime values, classes, top-level side effects, or additional exports. Keep the implementation small and synchronous.
 - Tests of generated executable behavior run in Chromium, not by importing generated source into the credential-bearing Node process. Source restrictions are contract controls, not a general JavaScript security sandbox.
 

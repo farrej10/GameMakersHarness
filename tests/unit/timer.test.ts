@@ -22,4 +22,17 @@ describe('timer display', () => {
   it('keeps legacy non-timed games uncluttered', () => {
     expect(timerDisplay(reference, 600)).toEqual({ hidden: true, text: '' });
   });
+
+  it('supports a countdown inside a custom victory formula', () => {
+    const spec: GameSpec = {
+      ...reference,
+      objective: {
+        mode: 'custom',
+        winCondition: 'Reach the exit or survive for 20 seconds.',
+        survivalTicks: 1200,
+      },
+      timer: { mode: 'objective-countdown', label: 'Fallback' },
+    };
+    expect(timerDisplay(spec, 600)).toEqual({ hidden: false, text: 'Fallback: 0:10' });
+  });
 });

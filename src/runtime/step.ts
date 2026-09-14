@@ -195,7 +195,9 @@ export function stepGame(
       elapsedTicks: next.tick,
       survivalTicks: spec.objective.mode === 'survive' || spec.objective.mode === 'survive-then-exit'
         ? spec.objective.survivalTicks
-        : 1200,
+        : spec.objective.mode === 'custom' && spec.objective.survivalTicks !== null
+          ? spec.objective.survivalTicks
+          : 1200,
     });
   } catch (error) {
     return failedFrame(

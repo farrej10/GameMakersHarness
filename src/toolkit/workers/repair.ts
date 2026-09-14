@@ -116,6 +116,9 @@ export async function runRepairWorker(options: {
             'collect-then-exit': 'context.score >= context.target && context.atExit',
             survive: 'context.elapsedTicks >= context.survivalTicks',
             'survive-then-exit': 'context.elapsedTicks >= context.survivalTicks && context.atExit',
+            custom: options.spec.objective.mode === 'custom'
+              ? options.spec.objective.winCondition
+              : 'implement the approved custom win condition using only the victory context fields',
           },
           completeValidModule: validLogicExample,
           instruction: 'Use the complete valid module as the syntax pattern. Preserve valid enemy behavior. Do not add helpers, switch statements, destructuring, comments, or undeclared fields. Return exactly the import and two exported functions.',

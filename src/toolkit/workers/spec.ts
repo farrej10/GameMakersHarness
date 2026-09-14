@@ -7,7 +7,7 @@ export type SpecWorkerResult = {
   rejected: string[][];
 };
 
-function validationErrors(value: unknown, seed: number): string[] {
+function validationErrors(value: unknown, seed: number, originalPrompt: string): string[] {
   const errors: string[] = [];
   if (!validateGameSpec(value)) {
     errors.push(
@@ -21,6 +21,17 @@ function validationErrors(value: unknown, seed: number): string[] {
   } else {
     if (!value.animationProfile) {
       errors.push('/animationProfile is required for newly generated games');
+    }
+    const duration = originalPrompt.match(/\b(\d{1,3})\s*(seconds?|minutes?)\b/iu);
+    if (duration && (value.objective.mode === 'survive' || value.objective.mode === 'survive-then-exit')) {
+      const amount = Number(duration[1]);
+      const expectedTicks = amount * (/minute/iu.test(duration[2]!) ? 3_600 : 60);
+      if (value.objective.survivalTicks !== expectedTicks) {
+        errors.push(`/objective/survivalTicks must preserve the requested duration: ${expectedTicks} ticks`);
+      }
+    }
+    if (/\bwin\b/iu.test(originalPrompt) && /\b(surviv\w*|timer)\b/iu.test(originalPrompt) && !/\b(exit|door|portal|gate|escape)\b/iu.test(originalPrompt) && value.objective.mode !== 'survive') {
+      errors.push('/objective/mode must be survive because the request does not require reaching an exit');
     }
     const differences = [
       value.player.movement.mode !== 'standard',
@@ -66,7 +77,7 @@ export async function runSpecWorker(options: {
     };
     const result = await options.client.generate(request, options.signal);
     requests.push({ request, result });
-    const errors = validationErrors(result.content, options.seed);
+    const errors = validationErrors(result.content, options.seed, options.prompt);
     if (errors.length === 0) {
       return { spec: result.content as GameSpec, requests, rejected };
     }

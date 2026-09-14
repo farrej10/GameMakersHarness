@@ -29,6 +29,7 @@ import {
 } from '../runtime/state';
 import { FIXED_STEP_SECONDS, stepGame } from '../runtime/step';
 import { animationTicks, resolvedAnimationProfile } from './animation';
+import { timerDisplay } from './timer';
 
 const STEP_MS = FIXED_STEP_SECONDS * 1_000;
 const MAX_BACKLOG_STEPS = 5;
@@ -529,6 +530,10 @@ export class GameScene extends Phaser.Scene {
       `Score: ${this.state.score}/${this.currentSpec.collectibles.count}`;
     requiredElement('[data-testid="game-health"]').textContent =
       `Health: ${this.state.player.health}/${this.currentSpec.player.health}`;
+    const timer = requiredElement<HTMLElement>('[data-testid="game-timer"]');
+    const displayedTimer = timerDisplay(this.currentSpec, this.state.tick);
+    timer.hidden = displayedTimer.hidden;
+    timer.textContent = displayedTimer.text;
     requiredElement('[data-testid="game-state"]').textContent =
       this.state.state.toUpperCase();
 

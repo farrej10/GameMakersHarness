@@ -89,7 +89,9 @@ Generated games can combine standard, stamina sprint, or cooldown dash movement;
 npm.cmd run control
 ```
 
-Open `http://127.0.0.1:4300`. The page shows the proposed fantasy and mechanic choices, exact spec approval, live logic/level/art and repair states, report access, and a verified-game preview. Its optional “Demonstrate autonomous repair” checkbox enables the labeled fault above. Mutations require the loopback page origin. The game runs on a separate static origin, and credentials stay in the Node process.
+Open `http://127.0.0.1:4300`. The description remains editable for another iteration, and the generated specification can be edited and validated before approval. Enable **Pause to review agent outputs before building** to inspect and revise the logic source, level JSON, art contract, and rendered sprites. Sprite replacements are normalized to 64 by 64 PNGs. Each save creates a numbered revision, after which **Build and verify selected revisions** resumes the normal integration, verification, and repair loop. Leaving the option off preserves the one-click autonomous flow.
+
+The page also shows live logic, level, art, and repair states, report access, and a verified-game preview. Its optional “Demonstrate autonomous repair” checkbox enables the labeled fault above. Mutations require the loopback page origin. The game runs on a separate static origin, and credentials stay in the Node process.
 
 ## Important directories
 

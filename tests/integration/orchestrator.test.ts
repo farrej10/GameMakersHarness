@@ -8,6 +8,7 @@ import { approveSpecRun, proposeSpecRun, stableJson, type RunStatus } from '../.
 import { readEvents } from '../../src/toolkit/events';
 import type { ModelClient, ModelRequest, ModelResult } from '../../src/toolkit/openrouter';
 import { generateRun, transitionRun } from '../../src/toolkit/orchestrator';
+import { readReviewArtifacts, reviseReviewArtifact } from '../../src/toolkit/review';
 
 function json<T>(name: string): T {
   return JSON.parse(
@@ -105,6 +106,32 @@ function outputFor(request: ModelRequest): unknown {
 }
 
 describe('orchestrator', () => {
+  it('pauses for durable artifact review, accepts a revision, then resumes without rerunning agents', async () => {
+    const run = await approvedRun();
+    const roles: string[] = [];
+    const client: ModelClient = {
+      generate: async (request) => {
+        roles.push(request.role);
+        return response(request, outputFor(request));
+      },
+    };
+    const verify = vi.fn(async (runId: string) => verification(runId));
+
+    await expect(generateRun({ ...run, client, verify, pauseForReview: true })).resolves.toEqual({ status: 'reviewing' });
+    expect(verify).not.toHaveBeenCalled();
+    expect(readRunState(run.runRoot)).toBe('reviewing');
+    const artifacts = readReviewArtifacts(run.runRoot);
+    const moved = { ...artifacts.level, exit: { x: 700, y: 520 } };
+    expect(reviseReviewArtifact(run.runRoot, 'level', moved, spec).revision).toBe(1);
+
+    await expect(generateRun({ ...run, client, verify, resumeReview: true })).resolves.toMatchObject({ status: 'passed' });
+    expect(roles).toEqual(['logic', 'level', 'art']);
+    expect(verify).toHaveBeenCalledOnce();
+    expect(readRunState(run.runRoot)).toBe('verified');
+    expect(readEvents(path.join(run.runRoot, 'events.jsonl')).map(({ type }) => type)).toEqual(
+      expect.arrayContaining(['review.ready', 'review.approved']),
+    );
+  });
   it('dispatches all three workers before any completes and integrates before verify', async () => {
     const run = await approvedRun();
     const started: string[] = [];
@@ -356,6 +383,10 @@ describe('orchestrator', () => {
     expect(existsSync(path.join(run.runRoot, 'evidence', 'attempt-3', 'after', 'rejected.json'))).toBe(true);
   });
 });
+
+function readRunState(runRoot: string): string {
+  return (JSON.parse(readFileSync(path.join(runRoot, 'status.json'), 'utf8')) as RunStatus).state;
+}
 
 describe('run transitions', () => {
   it('permits declared transitions and rejects illegal ones', () => {

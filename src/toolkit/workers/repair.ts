@@ -114,6 +114,7 @@ export async function runRepairWorker(options: {
           victoryRules: {
             'collect-all': 'context.score >= context.target',
             'collect-then-exit': 'context.score >= context.target && context.atExit',
+            survive: 'context.elapsedTicks >= context.survivalTicks',
             'survive-then-exit': 'context.elapsedTicks >= context.survivalTicks && context.atExit',
           },
           completeValidModule: validLogicExample,

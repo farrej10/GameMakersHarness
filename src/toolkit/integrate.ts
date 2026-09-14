@@ -14,7 +14,7 @@ export type EnemyContext = Readonly<{
   bounds: Readonly<{ minX: number; maxX: number; minY: number; maxY: number }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive' | 'survive-then-exit';
   score: number;
   target: number;
   atExit: boolean;

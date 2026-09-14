@@ -57,6 +57,26 @@ const common = {
 };
 
 describe('role-specific context', () => {
+  it('corrects explicit survival durations and avoids inventing an exit requirement', async () => {
+    const wrong = structuredClone(spec);
+    wrong.objective = { mode: 'survive-then-exit', survivalTicks: 600 };
+    wrong.timer = { mode: 'objective-countdown', label: 'Dread' };
+    const corrected = structuredClone(wrong);
+    corrected.objective = { mode: 'survive', survivalTicks: 1800 };
+    const model = fake([wrong, corrected]);
+    const result = await runSpecWorker({
+      prompt: 'Avoid skeletons until a 30 second timer runs out, then you win.',
+      seed: spec.seed,
+      model: common.model,
+      systemPrompt: common.systemPrompt,
+      client: model.client,
+      signal: common.signal,
+    });
+    expect(result.spec.objective).toEqual({ mode: 'survive', survivalTicks: 1800 });
+    expect(result.rejected[0]?.join(' ')).toContain('1800 ticks');
+    expect(result.rejected[0]?.join(' ')).toContain('does not require reaching an exit');
+  });
+
   it('is deterministic, bounded, and excludes unrelated role data', () => {
     const first = logicContext('logic', spec);
     const second = logicContext('logic', structuredClone(spec));

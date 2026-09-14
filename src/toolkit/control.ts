@@ -1,13 +1,15 @@
-import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadToolkitConfig } from './config';
-import { approveSpecRun, proposeSpecRun, safeRunRoot } from './cli';
+import { getValidationErrors, validateGameSpec, type GameSpec } from '../contracts/index';
+import { approveSpecRun, proposeSpecRun, safeRunRoot, sha256, stableJson } from './cli';
 import { OpenRouterClient, RequestBudget } from './openrouter';
 import { generateRun } from './orchestrator';
-import { readEvents } from './events';
+import { EventWriter, readEvents } from './events';
 import { startStaticServer, type StaticServer } from './serve';
+import { artPreviewData, readReviewArtifacts, replaceReviewSprite, reviseReviewArtifact, type ReviewRole } from './review';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const RUN_ID = /^\d{8}T\d{6}Z-[0-9a-f]{8}$/u;
@@ -15,7 +17,7 @@ const RUN_ID = /^\d{8}T\d{6}Z-[0-9a-f]{8}$/u;
 type ControlActions = {
   propose(prompt: string, seed: number): Promise<{ runId: string; hash: string; spec: unknown }>;
   approve(runId: string, hash: string): Promise<void>;
-  generate(runId: string, demoFault?: 'logic-victory'): Promise<void>;
+  generate(runId: string, options?: { demoFault?: 'logic-victory'; pauseForReview?: boolean; resumeReview?: boolean }): Promise<void>;
 };
 
 export type ControlServer = {
@@ -43,8 +45,8 @@ function defaultActions(runsRoot: string): ControlActions {
     approve: async (runId, hash) => {
       approveSpecRun({ runId, hash, runsRoot });
     },
-    generate: async (runId, demoFault) => {
-      await generateRun({ runId, runsRoot, demoFault });
+    generate: async (runId, options) => {
+      await generateRun({ runId, runsRoot, ...options });
     },
   };
 }
@@ -64,7 +66,7 @@ async function readJsonBody(request: IncomingMessage): Promise<Record<string, un
   for await (const chunk of request) {
     const buffer = Buffer.from(chunk as Uint8Array);
     size += buffer.length;
-    if (size > 16_384) throw new Error('Request body exceeds 16384 bytes.');
+    if (size > 2_000_000) throw new Error('Request body exceeds 2000000 bytes.');
     chunks.push(buffer);
   }
   const value: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -123,6 +125,38 @@ function runProgress(runRoot: string): Record<string, unknown> {
   return { ...status, workers, repair };
 }
 
+function reviseSpec(runRoot: string, runId: string, value: unknown): { hash: string; spec: GameSpec } {
+  const status = JSON.parse(readFileSync(path.join(runRoot, 'status.json'), 'utf8')) as { state?: string };
+  if (status.state !== 'awaiting-approval') throw new Error('The specification can only be edited before approval.');
+  if (!validateGameSpec(value)) {
+    throw new Error(`Specification is invalid: ${JSON.stringify(getValidationErrors(validateGameSpec))}`);
+  }
+  const revisionsRoot = path.join(runRoot, 'workers', 'spec', 'manual-revisions');
+  mkdirSync(revisionsRoot, { recursive: true });
+  const revision = readdirSync(revisionsRoot).filter((name) => /^revision-\d+\.json$/u.test(name)).length + 1;
+  const relative = `workers/spec/manual-revisions/revision-${revision}.json`;
+  const serialized = stableJson(value);
+  writeFileSync(path.join(runRoot, relative), serialized);
+  writeFileSync(path.join(runRoot, 'game-spec.json'), serialized);
+  const hash = sha256(serialized);
+  new EventWriter(runId, path.join(runRoot, 'events.jsonl')).append({
+    type: 'spec.revised', role: 'spec', attempt: revision,
+    data: { specPath: relative, specSha256: hash, revision },
+  });
+  return { hash, spec: value as GameSpec };
+}
+
+function reviewPayload(runRoot: string): Record<string, unknown> {
+  const spec = JSON.parse(readFileSync(path.join(runRoot, 'game-spec.json'), 'utf8')) as GameSpec;
+  const artifacts = readReviewArtifacts(runRoot);
+  return {
+    prompt: readFileSync(path.join(runRoot, 'prompt.txt'), 'utf8'),
+    spec,
+    artifacts,
+    previews: artPreviewData(artifacts.art, spec.theme.palette),
+  };
+}
+
 function page(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agentic Game Maker</title><style>body{font:16px system-ui;max-width:1000px;margin:auto;padding:2rem;background:#eef5ef;color:#15251c}textarea,pre{width:100%;box-sizing:border-box;padding:1rem}button{padding:.6rem 1rem;margin:.4rem}.row{display:flex;gap:1rem;align-items:center}iframe{width:100%;height:760px;border:1px solid #789}#status{font-weight:700}</style></head><body><h1>Agentic Game Maker</h1><p>Describe a top-down collection/survival game. Review and approve its exact specification before generation.</p><form id="spec-form"><textarea id="prompt" rows="5" maxlength="4000" required></textarea><div class="row"><label>Seed <input id="seed" type="number" min="0" max="2147483647" value="42"></label><button>Create specification</button></div></form><h2>Specification</h2><pre id="spec">No proposal yet.</pre><button id="approve" disabled>Approve exact spec</button><button id="generate" disabled>Generate and verify</button><p id="status">Idle</p><p><a id="report" hidden>Execution report</a></p><iframe id="game" title="Verified game" hidden></iframe><script type="module">let current=null;const status=document.querySelector('#status');const spec=document.querySelector('#spec');const approve=document.querySelector('#approve');const generate=document.querySelector('#generate');async function call(url,body){const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error||'Request failed');return value}document.querySelector('#spec-form').addEventListener('submit',async event=>{event.preventDefault();status.textContent='Creating specification…';try{current=await call('/api/spec',{prompt:document.querySelector('#prompt').value,seed:Number(document.querySelector('#seed').value)});spec.textContent=JSON.stringify(current.spec,null,2);approve.disabled=false;generate.disabled=true;status.textContent='Review the specification, then approve.'}catch(error){status.textContent=error.message}});approve.addEventListener('click',async()=>{try{await call('/api/approve',{runId:current.runId,hash:current.hash});approve.disabled=true;generate.disabled=false;status.textContent='Approved.'}catch(error){status.textContent=error.message}});generate.addEventListener('click',async()=>{try{await call('/api/generate',{runId:current.runId});generate.disabled=true;status.textContent='Generating and verifying…';const poll=setInterval(async()=>{const response=await fetch('/api/run/'+current.runId);const run=await response.json();status.textContent=run.state;if(run.state==='verified'||run.state==='stopped'){clearInterval(poll);const report=document.querySelector('#report');report.href='/report/'+current.runId;report.hidden=false;if(run.state==='verified'){const play=await call('/api/play',{runId:current.runId});const frame=document.querySelector('#game');frame.src=play.origin;frame.hidden=false}}},1000)}catch(error){status.textContent=error.message}});</script></body></html>`;
 }
@@ -135,6 +169,32 @@ function enhancedPage(): string {
       '.mechanics,.agents{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0}.chip,.agent{padding:.6rem .8rem;border:1px solid #789;border-radius:.5rem;background:#fff}.agent{min-width:120px}.agent strong,.agent span{display:block}.agent.waiting{opacity:.55}.agent.running{border-color:#c48a00;background:#fff8df}.agent.completed{border-color:#27864d;background:#eafff0}.agent.failed{border-color:#b52d2d;background:#fff0f0}.demo{display:inline-block;margin:.6rem}details{margin-bottom:1rem}</style>',
     )
     .replace('</body>', `${enhancement}</body>`);
+}
+
+function workbenchPage(): string {
+  return String.raw`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agentic Game Maker</title><style>
+body{font:16px system-ui;max-width:1100px;margin:auto;padding:2rem;background:#eef5ef;color:#15251c}textarea{width:100%;box-sizing:border-box;padding:.8rem;font:14px ui-monospace,monospace}button{padding:.65rem 1rem;margin:.35rem}.row,.agents,.sprites{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}.card{padding:1rem;margin:1rem 0;border:1px solid #789;border-radius:.6rem;background:#fff}.agent{padding:.6rem .8rem;border:1px solid #789;border-radius:.5rem}.completed{background:#eafff0}.running{background:#fff8df}.failed{background:#fff0f0}.sprites figure{margin:.4rem;padding:.6rem;border:1px solid #9ab;border-radius:.5rem}.sprites img{display:block;width:128px;height:128px;image-rendering:pixelated;background:#ccd}iframe{width:100%;height:760px;border:1px solid #789}#status{font-weight:700}.help{color:#496356}details{margin:.7rem 0}input[type=number]{width:9rem;padding:.4rem}</style></head><body>
+<h1>Agentic Game Maker</h1><p>Edit the description at any time to start another iteration. The optional review gate pauses after the agents finish so every artifact can be changed before the build.</p>
+<form id="spec-form" class="card"><label for="prompt"><strong>Game description</strong></label><textarea id="prompt" rows="6" maxlength="4000" required></textarea><div class="row"><label>Seed <input id="seed" type="number" min="0" max="2147483647" value="42"></label><button>Create specification</button></div></form>
+<section class="card"><h2>Design summary</h2><div id="mechanics">No proposal yet.</div><details open><summary>Editable specification JSON</summary><textarea id="spec" rows="20" disabled></textarea></details><button id="save-spec" disabled>Validate and save spec edits</button><button id="approve" disabled>Approve exact spec</button></section>
+<section class="card"><h2>Agent progress</h2><div id="agents" class="agents"></div><label><input id="review-gate" type="checkbox"> Pause to review agent outputs before building</label><br><label><input id="demo-fault" type="checkbox"> Demonstrate autonomous repair</label><br><button id="generate" disabled>Generate and verify</button><p id="status">Idle</p></section>
+<section id="review" class="card" hidden><h2>Agent output review</h2><p class="help">Each save creates a numbered revision. Original agent outputs remain in the run evidence.</p><details open><summary>Game logic agent</summary><textarea id="logic" rows="22"></textarea><button data-save="logic">Validate and save logic</button></details><details><summary>Level agent</summary><textarea id="level" rows="18"></textarea><button data-save="level">Validate and save level</button></details><details open><summary>Art agent</summary><div id="sprites" class="sprites"></div><details><summary>Editable art contract JSON</summary><textarea id="art" rows="14"></textarea><button data-save="art">Validate and save art contract</button></details></details><button id="continue">Build and verify selected revisions</button></section>
+<p><a id="report" hidden>Execution report</a></p><iframe id="game" title="Verified game" hidden></iframe>
+<script type="module">
+let current=null,pollTimer=null;const q=s=>document.querySelector(s),status=q('#status');
+async function call(url,body){const response=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const value=await response.json();if(!response.ok)throw new Error(value.error||'Request failed');return value}
+function renderSpec(v){q('#spec').value=JSON.stringify(v,null,2);const parts=[];if(v.identity)parts.push(v.identity.fantasy);if(v.player)parts.push('Movement: '+v.player.movement.mode);if(v.objective)parts.push('Objective: '+v.objective.mode);if(v.timer)parts.push('Timer: '+v.timer.mode);q('#mechanics').textContent=parts.join(' · ')||v.title||'Specification ready.'}
+function renderProgress(run){q('#agents').replaceChildren(...(run.workers||[]).map(item=>{const n=document.createElement('div');n.className='agent '+item.status;n.textContent=item.role+': '+item.status;return n}))}
+async function loadReview(){const response=await fetch('/api/run/'+current.runId+'/artifacts'),r=await response.json();if(!response.ok)throw new Error(r.error);q('#logic').value=r.artifacts.logic.source;q('#level').value=JSON.stringify(r.artifacts.level,null,2);q('#art').value=JSON.stringify(r.artifacts.art,null,2);const box=q('#sprites');box.replaceChildren();for(const [id,src] of Object.entries(r.previews)){const fig=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption'),input=document.createElement('input');img.src=src;img.alt=id+' sprite';cap.textContent=id;input.type='file';input.accept='image/png';input.addEventListener('change',async()=>{const file=input.files&&input.files[0];if(!file)return;const base64=await new Promise(ok=>{const reader=new FileReader();reader.onload=()=>ok(String(reader.result).split(',')[1]);reader.readAsDataURL(file)});await call('/api/art/upload',{runId:current.runId,assetId:id,pngBase64:base64});status.textContent='Saved new '+id+' art revision.';await loadReview()});fig.append(img,cap,input);box.append(fig)}q('#review').hidden=false}
+async function poll(){const run=await (await fetch('/api/run/'+current.runId)).json();renderProgress(run);status.textContent=run.state;if(run.state==='reviewing'){clearInterval(pollTimer);await loadReview()}if(run.state==='verified'||run.state==='stopped'){clearInterval(pollTimer);q('#report').href='/report/'+current.runId;q('#report').hidden=false;if(run.state==='verified'){const play=await call('/api/play',{runId:current.runId});q('#game').src=play.origin;q('#game').hidden=false}}}
+function beginPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>void poll(),800);void poll()}
+q('#spec-form').addEventListener('submit',async e=>{e.preventDefault();try{status.textContent='Creating specification…';current=await call('/api/spec',{prompt:q('#prompt').value,seed:Number(q('#seed').value)});renderSpec(current.spec);q('#spec').disabled=false;q('#save-spec').disabled=false;q('#approve').disabled=false;q('#generate').disabled=true;q('#review').hidden=true;status.textContent='Edit the JSON if needed, then approve.'}catch(e){status.textContent=e.message}});
+q('#save-spec').addEventListener('click',async()=>{try{const r=await call('/api/spec/edit',{runId:current.runId,spec:JSON.parse(q('#spec').value)});current.hash=r.hash;current.spec=r.spec;renderSpec(r.spec);status.textContent='Specification revision saved.'}catch(e){status.textContent=e.message}});
+q('#approve').addEventListener('click',async()=>{try{await call('/api/approve',{runId:current.runId,hash:current.hash});q('#approve').disabled=true;q('#save-spec').disabled=true;q('#spec').disabled=true;q('#generate').disabled=false;status.textContent='Approved.'}catch(e){status.textContent=e.message}});
+q('#generate').addEventListener('click',async()=>{try{await call('/api/generate',{runId:current.runId,pauseForReview:q('#review-gate').checked,demoFault:q('#demo-fault').checked?'logic-victory':null});q('#generate').disabled=true;status.textContent='Generating…';beginPoll()}catch(e){status.textContent=e.message}});
+for(const b of document.querySelectorAll('[data-save]'))b.addEventListener('click',async()=>{const role=b.dataset.save;try{const artifact=role==='logic'?{schemaVersion:1,source:q('#logic').value}:JSON.parse(q('#'+role).value);const r=await call('/api/artifact/edit',{runId:current.runId,role,artifact});status.textContent='Saved '+role+' revision '+r.revision+'.';await loadReview()}catch(e){status.textContent=e.message}});
+q('#continue').addEventListener('click',async()=>{try{await call('/api/continue',{runId:current.runId});q('#review').hidden=true;status.textContent='Building and verifying revisions…';beginPoll()}catch(e){status.textContent=e.message}});
+</script></body></html>`;
 }
 
 function closeHttp(server: Server): Promise<void> {
@@ -157,7 +217,7 @@ export async function startControlServer(options: {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
       if (request.method === 'GET' && url.pathname === '/') {
         response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-        response.end(enhancedPage());
+        response.end(workbenchPage());
         return;
       }
       if (request.method === 'GET' && url.pathname === '/api/runs') {
@@ -173,6 +233,14 @@ export async function startControlServer(options: {
       if (request.method === 'GET' && runMatch) {
         const root = safeRunRoot(runsRoot, runMatch[1]!);
         jsonResponse(response, 200, runProgress(root));
+        return;
+      }
+      const artifactMatch = url.pathname.match(/^\/api\/run\/(\d{8}T\d{6}Z-[0-9a-f]{8})\/artifacts$/u);
+      if (request.method === 'GET' && artifactMatch) {
+        const root = safeRunRoot(runsRoot, artifactMatch[1]!);
+        const status = JSON.parse(readFileSync(path.join(root, 'status.json'), 'utf8')) as { state?: string };
+        if (status.state !== 'reviewing') throw new Error('Artifacts are available while a run is awaiting review.');
+        jsonResponse(response, 200, reviewPayload(root));
         return;
       }
       const reportMatch = url.pathname.match(/^\/report\/(\d{8}T\d{6}Z-[0-9a-f]{8})$/u);
@@ -197,6 +265,13 @@ export async function startControlServer(options: {
         jsonResponse(response, 201, await actions.propose(body.prompt, body.seed as number));
         return;
       }
+      if (url.pathname === '/api/spec/edit') {
+        if (typeof body.runId !== 'string' || !RUN_ID.test(body.runId) || body.spec === undefined) {
+          throw new Error('A valid runId and spec are required.');
+        }
+        jsonResponse(response, 200, reviseSpec(safeRunRoot(runsRoot, body.runId), body.runId, body.spec));
+        return;
+      }
       if (url.pathname === '/api/approve') {
         if (typeof body.runId !== 'string' || typeof body.hash !== 'string') throw new Error('runId and hash are required.');
         await actions.approve(body.runId, body.hash);
@@ -210,8 +285,55 @@ export async function startControlServer(options: {
         }
         if (active.has(body.runId)) throw new Error('This run is already active.');
         active.add(body.runId);
+        if (body.pauseForReview !== undefined && typeof body.pauseForReview !== 'boolean') {
+          throw new Error('pauseForReview must be a boolean.');
+        }
         void actions
-          .generate(body.runId, body.demoFault as 'logic-victory' | undefined)
+          .generate(body.runId, {
+            demoFault: body.demoFault as 'logic-victory' | undefined,
+            pauseForReview: body.pauseForReview === true,
+          })
+          .catch(() => undefined)
+          .finally(() => active.delete(body.runId as string));
+        jsonResponse(response, 202, { accepted: true });
+        return;
+      }
+      if (url.pathname === '/api/artifact/edit') {
+        if (typeof body.runId !== 'string' || !RUN_ID.test(body.runId)) throw new Error('A valid runId is required.');
+        if (body.role !== 'logic' && body.role !== 'level' && body.role !== 'art') throw new Error('role must be logic, level, or art.');
+        const root = safeRunRoot(runsRoot, body.runId);
+        const status = JSON.parse(readFileSync(path.join(root, 'status.json'), 'utf8')) as { state?: string };
+        if (status.state !== 'reviewing') throw new Error('Artifacts can only be edited during review.');
+        const spec = JSON.parse(readFileSync(path.join(root, 'game-spec.json'), 'utf8')) as GameSpec;
+        const revised = reviseReviewArtifact(root, body.role as ReviewRole, body.artifact, spec);
+        new EventWriter(body.runId, path.join(root, 'events.jsonl')).append({
+          type: 'artifact.revised', role: body.role, attempt: revised.revision,
+          data: { artifact: body.role, artifactPath: revised.artifactPath, revision: revised.revision },
+        });
+        jsonResponse(response, 200, revised);
+        return;
+      }
+      if (url.pathname === '/api/art/upload') {
+        if (typeof body.runId !== 'string' || !RUN_ID.test(body.runId)) throw new Error('A valid runId is required.');
+        if (body.assetId !== 'player' && body.assetId !== 'collectible' && body.assetId !== 'enemy' && body.assetId !== 'exit') throw new Error('A valid assetId is required.');
+        if (typeof body.pngBase64 !== 'string') throw new Error('pngBase64 is required.');
+        const root = safeRunRoot(runsRoot, body.runId);
+        const status = JSON.parse(readFileSync(path.join(root, 'status.json'), 'utf8')) as { state?: string };
+        if (status.state !== 'reviewing') throw new Error('Art can only be edited during review.');
+        const spec = JSON.parse(readFileSync(path.join(root, 'game-spec.json'), 'utf8')) as GameSpec;
+        const revised = replaceReviewSprite(root, body.assetId, Buffer.from(body.pngBase64, 'base64'), spec);
+        new EventWriter(body.runId, path.join(root, 'events.jsonl')).append({
+          type: 'artifact.revised', role: 'art', attempt: revised.revision,
+          data: { artifact: 'art', artifactPath: revised.artifactPath, revision: revised.revision },
+        });
+        jsonResponse(response, 200, revised);
+        return;
+      }
+      if (url.pathname === '/api/continue') {
+        if (typeof body.runId !== 'string' || !RUN_ID.test(body.runId)) throw new Error('A valid runId is required.');
+        if (active.has(body.runId)) throw new Error('This run is already active.');
+        active.add(body.runId);
+        void actions.generate(body.runId, { resumeReview: true })
           .catch(() => undefined)
           .finally(() => active.delete(body.runId as string));
         jsonResponse(response, 202, { accepted: true });

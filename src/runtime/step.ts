@@ -193,7 +193,7 @@ export function stepGame(
       target: spec.collectibles.count,
       atExit,
       elapsedTicks: next.tick,
-      survivalTicks: spec.objective.mode === 'survive-then-exit'
+      survivalTicks: spec.objective.mode === 'survive' || spec.objective.mode === 'survive-then-exit'
         ? spec.objective.survivalTicks
         : 1200,
     });

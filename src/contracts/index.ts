@@ -32,6 +32,7 @@ export const EnemyBehaviorSchema = Type.Union([
 export const ObjectiveModeSchema = Type.Union([
   Type.Literal('collect-all'),
   Type.Literal('collect-then-exit'),
+  Type.Literal('survive'),
   Type.Literal('survive-then-exit'),
 ]);
 export const AssetIdSchema = Type.Union([
@@ -96,10 +97,22 @@ export const GameSpecSchema = closedObject({
     closedObject({ mode: Type.Literal('collect-all') }),
     closedObject({ mode: Type.Literal('collect-then-exit') }),
     closedObject({
+      mode: Type.Literal('survive'),
+      survivalTicks: Type.Integer({ minimum: 600, maximum: 3600 }),
+    }),
+    closedObject({
       mode: Type.Literal('survive-then-exit'),
       survivalTicks: Type.Integer({ minimum: 600, maximum: 3600 }),
     }),
   ]),
+  timer: Type.Optional(closedObject({
+    mode: Type.Union([
+      Type.Literal('hidden'),
+      Type.Literal('elapsed'),
+      Type.Literal('objective-countdown'),
+    ]),
+    label: NonEmptyText(24),
+  })),
   identity: closedObject({
     fantasy: NonEmptyText(120),
     signatureMechanic: NonEmptyText(120),
@@ -284,7 +297,7 @@ export type EnemyContext = Readonly<{
   }>;
 }>;
 export type VictoryContext = Readonly<{
-  mode: 'collect-all' | 'collect-then-exit' | 'survive-then-exit';
+  mode: 'collect-all' | 'collect-then-exit' | 'survive' | 'survive-then-exit';
   score: number;
   target: number;
   atExit: boolean;
@@ -427,6 +440,7 @@ export const RunStateSchema = Type.Union([
   Type.Literal('draft'),
   Type.Literal('awaiting-approval'),
   Type.Literal('generating'),
+  Type.Literal('reviewing'),
   Type.Literal('integrating'),
   Type.Literal('verifying'),
   Type.Literal('repairing'),
@@ -512,6 +526,30 @@ export const RunEventSchema = Type.Union([
     }),
   ),
   eventSchema('art.fallback', closedObject({ reason: NonEmptyText(1_000) })),
+  eventSchema(
+    'spec.revised',
+    closedObject({
+      specPath: RelativeArtifactPath,
+      specSha256: Type.String({ pattern: '^[0-9a-f]{64}$' }),
+      revision: Type.Integer({ minimum: 1 }),
+    }),
+  ),
+  eventSchema(
+    'review.ready',
+    closedObject({ artifactsPath: RelativeArtifactPath }),
+  ),
+  eventSchema(
+    'artifact.revised',
+    closedObject({
+      artifact: Type.Union([Type.Literal('logic'), Type.Literal('level'), Type.Literal('art')]),
+      artifactPath: RelativeArtifactPath,
+      revision: Type.Integer({ minimum: 1 }),
+    }),
+  ),
+  eventSchema(
+    'review.approved',
+    closedObject({ artifactsPath: RelativeArtifactPath }),
+  ),
   eventSchema(
     'demo.fault.injected',
     closedObject({

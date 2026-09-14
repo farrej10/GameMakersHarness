@@ -38,6 +38,7 @@ const ENUM_STRINGS = new Set([
   'guard',
   'collect-all',
   'collect-then-exit',
+  'survive',
   'survive-then-exit',
 ]);
 const ALLOWED_MATH_CALLS = new Set([

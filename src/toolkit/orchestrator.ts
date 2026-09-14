@@ -38,6 +38,7 @@ import { runArtWorker, type ArtWorkerResult } from './workers/art';
 import { runLevelWorker, type LevelWorkerResult } from './workers/level';
 import { runLogicWorker, type LogicWorkerResult } from './workers/logic';
 import { validateLogicArtifact } from './validate';
+import { readReviewArtifacts, writeReviewArtifacts } from './review';
 import {
   RepairRejectedError,
   runRepairWorker,
@@ -48,7 +49,8 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const TRANSITIONS: Readonly<Record<RunState, readonly RunState[]>> = {
   draft: ['awaiting-approval', 'stopped'],
   'awaiting-approval': ['generating', 'stopped'],
-  generating: ['integrating', 'stopped'],
+  generating: ['reviewing', 'integrating', 'stopped'],
+  reviewing: ['generating', 'stopped'],
   integrating: ['verifying', 'stopped'],
   verifying: ['repairing', 'verified', 'stopped'],
   repairing: ['integrating', 'stopped'],
@@ -217,7 +219,9 @@ export async function generateRun(options: {
   now?: () => Date;
   signal?: AbortSignal;
   demoFault?: 'logic-victory';
-}): Promise<VerifyResult> {
+  pauseForReview?: boolean;
+  resumeReview?: boolean;
+}): Promise<VerifyResult | { status: 'reviewing' }> {
   const runsRoot = options.runsRoot ?? path.join(projectRoot, 'runs');
   const runRoot = safeRunRoot(runsRoot, options.runId);
   const lockPath = path.join(runsRoot, '.active-generation.lock');
@@ -233,8 +237,9 @@ export async function generateRun(options: {
   const events = new EventWriter(options.runId, path.join(runRoot, 'events.jsonl'), now);
   const status = readRunStatus(runRoot);
   try {
-    if (status.state !== 'awaiting-approval') {
-      throw new Error(`Run is ${status.state}; generation requires awaiting-approval.`);
+    const resumingReview = options.resumeReview === true;
+    if ((!resumingReview && status.state !== 'awaiting-approval') || (resumingReview && status.state !== 'reviewing')) {
+      throw new Error(`Run is ${status.state}; generation requires ${resumingReview ? 'reviewing' : 'awaiting-approval'}.`);
     }
     const specBytes = readFileSync(path.join(runRoot, 'game-spec.json'));
     const specValue: unknown = JSON.parse(specBytes.toString('utf8'));
@@ -247,10 +252,12 @@ export async function generateRun(options: {
 
     mkdirSync(path.join(runRoot, 'evidence'), { recursive: true });
     mkdirSync(path.join(runRoot, 'requests'), { recursive: true });
-    writeFileSync(
-      path.join(runRoot, 'evidence', 'protected-baseline.json'),
-      stableJson(snapshotProtectedFiles()),
-    );
+    if (!resumingReview) {
+      writeFileSync(
+        path.join(runRoot, 'evidence', 'protected-baseline.json'),
+        stableJson(snapshotProtectedFiles()),
+      );
+    }
     const manifest = deriveAssetManifest();
     writeFileSync(path.join(runRoot, 'asset-manifest.json'), stableJson(manifest));
     transitionRun(status, 'generating');
@@ -278,69 +285,70 @@ export async function generateRun(options: {
     const client = recordingClient(runRoot, baseClient);
     const signal = options.signal ?? new AbortController().signal;
     const prompt = (role: string) => readFileSync(path.join(projectRoot, 'prompts', `${role}.md`), 'utf8');
-    const jobs = [
-      ['logic', () => runLogicWorker({ spec, model: config.models.logic, systemPrompt: prompt('logic'), client, signal })],
-      ['level', () => runLevelWorker({ spec, model: config.models.level, systemPrompt: prompt('level'), client, signal })],
-      ['art', () => runArtWorker({ spec, manifest, model: config.models.art, systemPrompt: prompt('art'), client, signal })],
-    ] as const;
-    const executeJob = async ([role, start]: (typeof jobs)[number]) => {
-      events.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
-      try {
-        const completed = await start();
-        recordWorkerResult(runRoot, role, completed);
-        completed.rejected.forEach((errors, attempt) =>
+    let currentLogic: LogicOutput;
+    let currentLevel: LevelOutput;
+    let currentArt: ArtOutput;
+    if (resumingReview) {
+      ({ logic: currentLogic, level: currentLevel, art: currentArt } = readReviewArtifacts(runRoot));
+      events.append({
+        type: 'review.approved',
+        role: null,
+        attempt: null,
+        data: { artifactsPath: 'review/current' },
+      });
+    } else {
+      const jobs = [
+        ['logic', () => runLogicWorker({ spec, model: config.models.logic, systemPrompt: prompt('logic'), client, signal })],
+        ['level', () => runLevelWorker({ spec, model: config.models.level, systemPrompt: prompt('level'), client, signal })],
+        ['art', () => runArtWorker({ spec, manifest, model: config.models.art, systemPrompt: prompt('art'), client, signal })],
+      ] as const;
+      const executeJob = async ([role, start]: (typeof jobs)[number]) => {
+        events.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
+        try {
+          const completed = await start();
+          recordWorkerResult(runRoot, role, completed);
+          completed.rejected.forEach((errors, attempt) =>
+            events.append({ type: 'artifact.rejected', role, attempt, data: { artifact: `${role}.json`, errors } }),
+          );
           events.append({
-            type: 'artifact.rejected',
-            role,
-            attempt,
-            data: { artifact: `${role}.json`, errors },
-          }),
-        );
+            type: 'worker.completed', role, attempt: Math.max(0, completed.requests.length - 1),
+            data: {
+              requestId: completed.requests.at(-1)?.request.requestId ?? `${role}_0`,
+              artifactPath: `workers/${role}/attempt-${Math.max(0, completed.requests.length - 1)}/output.json`,
+            },
+          });
+          return completed;
+        } catch (error) {
+          events.append({
+            type: 'worker.failed', role, attempt: 0,
+            data: { requestId: `${role}_0`, code: 'WORKER_FAILED', message: boundedMessage(error) },
+          });
+          throw error;
+        }
+      };
+      const settled = await settleWithLimit(
+        jobs.map((job) => () => executeJob(job)),
+        config.limits.parallelWorkers,
+      );
+      const failures = settled
+        .filter((entry): entry is PromiseRejectedResult => entry.status === 'rejected')
+        .map((entry) => entry.reason instanceof Error ? entry.reason : new Error(String(entry.reason)));
+      status.requestCount = Math.max(status.requestCount + jobs.length, budget.count);
+      if (failures.length) throw failures[0];
+      const logic = (settled[0] as PromiseFulfilledResult<LogicWorkerResult>).value;
+      const level = (settled[1] as PromiseFulfilledResult<LevelWorkerResult>).value;
+      const art = (settled[2] as PromiseFulfilledResult<ArtWorkerResult>).value;
+      currentLogic = logic.output;
+      currentLevel = level.output;
+      currentArt = art.output;
+      if (art.artSource === 'fallback') {
         events.append({
-          type: 'worker.completed',
-          role,
-          attempt: Math.max(0, completed.requests.length - 1),
-          data: {
-            requestId: completed.requests.at(-1)?.request.requestId ?? `${role}_0`,
-            artifactPath: `workers/${role}/attempt-${Math.max(0, completed.requests.length - 1)}/output.json`,
-          },
+          type: 'art.fallback', role: 'art', attempt: null,
+          data: { reason: boundedMessage(art.fallbackReason ?? 'Generated art was unavailable.', 1_000) },
         });
-        return completed;
-      } catch (error) {
-        events.append({
-          type: 'worker.failed',
-          role,
-          attempt: 0,
-          data: {
-            requestId: `${role}_0`,
-            code: 'WORKER_FAILED',
-            message: boundedMessage(error),
-          },
-        });
-        throw error;
       }
-    };
-    const settled = await settleWithLimit(
-      jobs.map((job) => () => executeJob(job)),
-      config.limits.parallelWorkers,
-    );
-    const failures: Error[] = [];
-    settled.forEach((entry) => {
-      if (entry.status === 'rejected') {
-        const error = entry.reason instanceof Error ? entry.reason : new Error(String(entry.reason));
-        failures.push(error);
-      }
-    });
-    status.requestCount = Math.max(status.requestCount + jobs.length, budget.count);
-    if (failures.length) throw failures[0];
-
-    const logic = (settled[0] as PromiseFulfilledResult<LogicWorkerResult>).value;
-    const level = (settled[1] as PromiseFulfilledResult<LevelWorkerResult>).value;
-    const art = (settled[2] as PromiseFulfilledResult<ArtWorkerResult>).value;
-    let currentLogic: LogicOutput = logic.output;
-    let currentLevel: LevelOutput = level.output;
-    let currentArt: ArtOutput = art.output;
-    if (options.demoFault === 'logic-victory') {
+    }
+    if (!resumingReview && options.demoFault === 'logic-victory') {
       const demoRoot = path.join(runRoot, 'evidence', 'demo-fault');
       mkdirSync(demoRoot, { recursive: true });
       writeFileSync(path.join(demoRoot, 'original-logic.json'), stableJson(currentLogic));
@@ -358,13 +366,23 @@ export async function generateRun(options: {
         },
       });
     }
-    if (art.artSource === 'fallback') {
+    if (!resumingReview) writeReviewArtifacts(runRoot, {
+      logic: currentLogic,
+      level: currentLevel,
+      art: currentArt,
+    });
+    if (!resumingReview && options.pauseForReview) {
+      transitionRun(status, 'reviewing');
+      status.activeElapsedMs += Math.round(performance.now() - started);
+      writeRunStatus(runRoot, status);
       events.append({
-        type: 'art.fallback',
-        role: 'art',
+        type: 'review.ready',
+        role: null,
         attempt: null,
-        data: { reason: boundedMessage(art.fallbackReason ?? 'Generated art was unavailable.', 1_000) },
+        data: { artifactsPath: 'review/current' },
       });
+      generateExecutionReport(runRoot);
+      return { status: 'reviewing' };
     }
     transitionRun(status, 'integrating');
     writeRunStatus(runRoot, status);

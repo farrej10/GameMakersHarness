@@ -149,12 +149,13 @@ Repair models need text assertions and current code. Screenshots are judge/human
 2. Revalidate approved spec and its hash. Snapshot protected baseline file hashes.
 3. Derive manifest from trusted constants.
 4. Submit logic, level, and art to a bounded worker pool controlled by `parallelWorkers`. With the default of three, all begin together; lower limits queue work without exceeding configured concurrency.
-5. Emit start and terminal events and save each worker response as that worker actually starts or settles. Only the orchestrator selects final accepted outputs.
-6. Validate role schemas and semantic constraints. Initial invalid output gets one role correction. Art may fall back as described in CONTRACTS; invalid logic or level stops the run after its correction limit.
-7. Construct run-local integration files from accepted artifacts; use fixed filenames, never paths from model text.
-8. Build and verify through the fixed harness.
-9. On success, produce the report and expose the current production build. On failure, enter repair routing.
-10. Always release owned process resources and lock in `finally`; always write a terminal report, including on interruption where possible.
+5. If the optional review gate is enabled, persist validated copies under `review/current`, enter `reviewing`, and release the active-run lock. Manual saves create numbered revisions. A later continue request reloads and validates the selected copies before integration. Without the gate, integration begins immediately.
+6. Emit start and terminal events and save each worker response as that worker actually starts or settles. Only the orchestrator selects final accepted outputs.
+7. Validate role schemas and semantic constraints. Initial invalid output gets one role correction. Art may fall back as described in CONTRACTS; invalid logic or level stops the run after its correction limit.
+8. Construct run-local integration files from accepted artifacts; use fixed filenames, never paths from model text.
+9. Build and verify through the fixed harness.
+10. On success, produce the report and expose the current production build. On failure, enter repair routing.
+11. Always release owned process resources and lock in `finally`; always write a terminal report, including on interruption where possible.
 
 The Vite config maps `@generated/rules`, `@generated/spec`, and `@generated/level` to selected integration files. `publicDir` points at the selected integration public directory. `base` is `./` so exported game assets use relative URLs. Use `tests/fixtures/reference` when no run is selected. Never copy current output over reference fixtures.
 
@@ -194,7 +195,7 @@ Human implementation agents may change trusted files while implementing an assig
 
 ## 8. Evidence and status
 
-Run states: `draft`, `awaiting-approval`, `generating`, `integrating`, `verifying`, `repairing`, `verified`, `stopped`. Legal transitions must be encoded and tested. Approval is legal only from `awaiting-approval`; generation requires matching approval and cannot run twice concurrently. MVP interrupted runs stop; automatic crash-resume is out of scope. A retry after a terminal failure starts a new run rather than rewriting evidence.
+Run states: `draft`, `awaiting-approval`, `generating`, `reviewing`, `integrating`, `verifying`, `repairing`, `verified`, `stopped`. Legal transitions must be encoded and tested. Approval is legal only from `awaiting-approval`; generation requires matching approval and cannot run twice concurrently. The optional `reviewing` state is durable and resumable. Interrupted active phases stop; automatic crash-resume is out of scope. A retry after a terminal failure starts a new run rather than rewriting evidence.
 
 The HTML report is generated from validated JSON/events. Escape every string before inserting it into HTML. Show prompt, approved spec, status, model IDs, actual overlapping worker intervals, verification results, repair diffs, evidence links, cost availability, and art fallback status. Failed or incomplete runs must not show a verified badge.
 

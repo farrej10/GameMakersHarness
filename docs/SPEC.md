@@ -27,7 +27,7 @@ Record evidence from both and identify which process each artifact demonstrates.
 | Geometry | Circular collisions; no interior walls, projectiles, doors, navigation mesh, or procedural terrain |
 | Collection | Touch in any order or a declared c1..cN route |
 | Enemy behavior | `chase`, horizontal/vertical patrol, or proximity `guard`; one family per game |
-| Victory | `collect-all`, `collect-then-exit`, or timed `survive-then-exit` |
+| Victory | `collect-all`, `collect-then-exit`, timed `survive`, or timed `survive-then-exit` |
 | World identity | Open, quadrants, lanes, or perimeter layout; none, darkness, or rising-danger pressure |
 | Animation cues | Bounded dash, damage, and collection styles, duration, color, and optional camera shake |
 | Defeat | Health reaches zero |
@@ -52,7 +52,7 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 
 ## 4. Gameplay semantics
 
-1. On load, show a Start button, controls, objective, health, and score. Simulation does not advance in `ready`.
+1. On load, show a Start button, controls, objective, health, score, and the requested timer. Simulation does not advance in `ready`.
 2. On Start, state becomes `playing` and elapsed ticks start at zero.
 3. Run simulation at 60 ticks per second. Every simulation step receives exactly `1 / 60` seconds; do not use wall time inside rules.
 4. Normalize the player's input vector when its length exceeds one. Standard movement uses base speed. Sprint consumes one stamina tick while moving and recharges one per inactive tick. Dash adds the declared distance in the input direction when its tick cooldown is ready.
@@ -63,7 +63,7 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 9. Enemy contact removes one health when cooldown is inactive. Apply at most one damage event per tick even if several enemies overlap. Health cannot fall below zero.
 10. Damage cooldown is exactly 60 simulation ticks. First contact at tick T can damage again at T+60. Use integer tick comparisons.
 11. After movement and collisions: apply collection, then damage, then defeat, then check victory if still alive. Defeat wins a simultaneous lethal-contact/victory tie.
-12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive-then-exit`: declared ticks elapse and player overlaps the exit.
+12. `collect-all`: victory when score reaches collectible count. `collect-then-exit`: score reaches count and player overlaps the exit. `survive`: declared ticks elapse. `survive-then-exit`: declared ticks elapse and player overlaps the exit. Explicit seconds convert at exactly 60 ticks per second.
 13. Rising-danger pressure scales enemy policy speed gradually to a maximum 1.75 multiplier. Layout changes the arena's visual structure and guides level placement.
 14. A won/lost game freezes simulation. Restart creates a fresh copy of the approved generated level, resets score, health, stamina, cooldowns, tick count, and input, then returns to `ready`.
 15. Rendering derives dash, damage, and collection effects from before/after simulation snapshots. Effects expire on simulation ticks, clear on restart, and never change simulation state. Real-time camera shake is visual only.
@@ -77,6 +77,7 @@ The logic worker does not rewrite the engine. This deliberate reduction from the
 - Bounds: player speed 140-220; enemy speed 40-100; health integer 2-5; counts as above.
 - A numeric request outside bounds must be explained in adaptations; do not silently clamp it.
 - Users may edit the proposed JSON locally before approval. Approval revalidates it and displays the actual rules.
+- The local control page may pause after parallel workers finish. During this optional review state, users can revise validated logic, level, and art artifacts or upload individual PNG sprites. Each revision is retained; continuing consumes the selected revisions and runs the ordinary harness and repair loop.
 - Approval hash covers the exact validated spec file bytes, including theme, defaults, and adaptations. Any byte change invalidates approval; regenerate the manifest from the newly approved spec.
 - Source prompt and spec are data, never instructions granting workers new permissions.
 

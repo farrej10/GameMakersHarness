@@ -97,6 +97,14 @@ describe('local control page', () => {
       mkdirSync(path.join(sourceRoot, 'workers', role, 'attempt-0'), { recursive: true });
       writeFileSync(path.join(sourceRoot, relative), artifact);
       sourceEvents.append({ type: 'worker.started', role, attempt: 0, data: { requestId: `${role}_0` } });
+      if (role === 'art') {
+        sourceEvents.append({
+          type: 'worker.failed',
+          role,
+          attempt: 0,
+          data: { requestId: `${role}_0`, code: 'WORKER_FAILED', message: 'Transient art failure.' },
+        });
+      }
       sourceEvents.append({ type: 'worker.completed', role, attempt: 0, data: { requestId: `${role}_0`, artifactPath: relative } });
     }
     const generate = vi.fn(async () => undefined);

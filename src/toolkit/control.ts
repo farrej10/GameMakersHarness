@@ -272,13 +272,15 @@ function retryStoppedRun(
       return [role, (event?.data as { artifactPath?: string } | undefined)?.artifactPath ?? null];
     }),
   ) as Record<GenerationRole, string | null>;
-  const failedRoles = new Set<GenerationRole>(
-    sourceEvents
-      .filter((event) => event.type === 'worker.failed' && (
-        event.role === 'logic' || event.role === 'level' || event.role === 'art'
-      ))
-      .map((event) => event.role as GenerationRole),
-  );
+  const failedRoles = new Set<GenerationRole>();
+  for (const role of ['logic', 'level', 'art'] as const) {
+    const latestWorkerOutcome = sourceEvents.findLast(
+      (event) => event.role === role && (
+        event.type === 'worker.completed' || event.type === 'worker.failed'
+      ),
+    );
+    if (latestWorkerOutcome?.type === 'worker.failed') failedRoles.add(role);
+  }
   for (const role of ['logic', 'level'] as const) {
     if (agentInstructions[role] !== sourceInstructions[role]) failedRoles.add(role);
   }

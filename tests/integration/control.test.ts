@@ -39,6 +39,7 @@ describe('local control page', () => {
     expect(pageText).toContain('Agent outputs and errors');
     expect(pageText).toContain('Retry failed run');
     expect(pageText).toContain('class="spinner"');
+    expect(pageText).toContain('Agent instructions (optional)');
     const forbidden = await fetch(`${server.origin}/api/spec`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -99,11 +100,18 @@ describe('local control page', () => {
     const response = await fetch(`${server.origin}/api/retry`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: server.origin },
-      body: JSON.stringify({ runId, pauseForReview: true }),
+      body: JSON.stringify({
+        runId,
+        pauseForReview: true,
+        agentInstructions: { logic: 'Follow the valid source example exactly.' },
+      }),
     });
     expect(response.status).toBe(202);
     const retried = await response.json() as { runId: string };
     expect(retried.runId).not.toBe(runId);
+    expect((retried as { agentInstructions?: object }).agentInstructions).toEqual({
+      logic: 'Follow the valid source example exactly.',
+    });
     await vi.waitFor(() => expect(generate).toHaveBeenCalledWith(retried.runId, { pauseForReview: true }));
     expect(readEvents(path.join(runsRoot, retried.runId, 'events.jsonl')).at(-1)).toMatchObject({
       type: 'run.retried', data: { sourceRunId: runId },

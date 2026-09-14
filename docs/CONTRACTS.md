@@ -290,6 +290,7 @@ runs/<run-id>/
   approval.json
   asset-manifest.json
   config.json                         # effective limits/models; no secrets
+  agent-instructions.json             # optional per-role user guidance, max 2 KB each
   status.json                         # atomic snapshot derived from orchestration state
   events.jsonl
   requests/<request-id>.json          # context, schema and response; never auth headers

@@ -39,6 +39,7 @@ import { runLevelWorker, type LevelWorkerResult } from './workers/level';
 import { runLogicWorker, type LogicWorkerResult } from './workers/logic';
 import { validateLogicArtifact } from './validate';
 import { readReviewArtifacts, writeReviewArtifacts } from './review';
+import { applyAgentInstruction, readAgentInstructions, type AgentInstructionRole } from './instructions';
 import {
   RepairRejectedError,
   runRepairWorker,
@@ -284,7 +285,12 @@ export async function generateRun(options: {
     });
     const client = recordingClient(runRoot, baseClient);
     const signal = options.signal ?? new AbortController().signal;
-    const prompt = (role: string) => readFileSync(path.join(projectRoot, 'prompts', `${role}.md`), 'utf8');
+    const agentInstructions = readAgentInstructions(runRoot);
+    const prompt = (role: AgentInstructionRole) => applyAgentInstruction(
+      readFileSync(path.join(projectRoot, 'prompts', `${role}.md`), 'utf8'),
+      role,
+      agentInstructions,
+    );
     let currentLogic: LogicOutput;
     let currentLevel: LevelOutput;
     let currentArt: ArtOutput;

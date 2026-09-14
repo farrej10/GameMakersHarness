@@ -129,7 +129,7 @@ Do not implement automatic upgrades to a more expensive model. Choose and record
 
 ## 4. Context packets
 
-Each call gets the role prompt, output schema, a compact task packet, and no previous conversation by default.
+Each call gets the protected role prompt, output schema, a compact task packet, and no previous conversation by default. A run may contain up to 2,000 UTF-8 bytes of optional user guidance per logic, level, art, or repair role. The orchestrator appends that guidance after the protected prompt; it does not replace the contract or validators. Persist the normalized guidance with the run and carry it into linked retries.
 
 | Role | Include | Exclude |
 | --- | --- | --- |

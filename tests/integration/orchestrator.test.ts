@@ -9,6 +9,7 @@ import { readEvents } from '../../src/toolkit/events';
 import type { ModelClient, ModelRequest, ModelResult } from '../../src/toolkit/openrouter';
 import { generateRun, transitionRun } from '../../src/toolkit/orchestrator';
 import { readReviewArtifacts, reviseReviewArtifact } from '../../src/toolkit/review';
+import { writeAgentInstructions } from '../../src/toolkit/instructions';
 
 function json<T>(name: string): T {
   return JSON.parse(
@@ -108,10 +109,12 @@ function outputFor(request: ModelRequest): unknown {
 describe('orchestrator', () => {
   it('pauses for durable artifact review, accepts a revision, then resumes without rerunning agents', async () => {
     const run = await approvedRun();
+    writeAgentInstructions(run.runRoot, { logic: 'Follow the supplied example exactly.' });
     const roles: string[] = [];
     const client: ModelClient = {
       generate: async (request) => {
         roles.push(request.role);
+        if (request.role === 'logic') expect(request.system).toContain('Follow the supplied example exactly.');
         return response(request, outputFor(request));
       },
     };

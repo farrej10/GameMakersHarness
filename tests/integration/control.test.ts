@@ -41,6 +41,7 @@ describe('local control page', () => {
     expect(pageText).toContain('class="spinner"');
     expect(pageText).toContain('Agent instructions (optional)');
     expect(pageText).toContain('id="sprite-instructions"');
+    expect(pageText).toContain('id="apply-instructions"');
     expect(pageText).toContain("if(parent.tagName==='DETAILS')parent.open=true");
     const forbidden = await fetch(`${server.origin}/api/spec`, {
       method: 'POST',
@@ -177,6 +178,20 @@ describe('local control page', () => {
     const iterated = await iterateResponse.json() as { runId: string };
     expect(readFileSync(path.join(runsRoot, iterated.runId, 'retry-inputs', 'level.json'), 'utf8'))
       .toBe(reviewedLevel);
+
+    writeFileSync(path.join(sourceRoot, 'status.json'), stableJson({
+      schemaVersion: 1, runId, state: 'verified', requestCount: 4, activeElapsedMs: 100,
+      reasonCode: null, message: null,
+    }));
+    const verifiedIteration = await fetch(`${server.origin}/api/iterate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: server.origin },
+      body: JSON.stringify({
+        runId,
+        agentInstructions: { 'art.exit': 'Make the exit a glowing hexagonal portal.' },
+      }),
+    });
+    expect(verifiedIteration.status).toBe(202);
   });
 
   it('serves reports on the control origin and games on a separate origin', async () => {

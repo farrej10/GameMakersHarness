@@ -40,6 +40,8 @@ describe('local control page', () => {
     expect(pageText).toContain('Retry failed run');
     expect(pageText).toContain('class="spinner"');
     expect(pageText).toContain('Agent instructions (optional)');
+    expect(pageText).toContain('id="sprite-instructions"');
+    expect(pageText).toContain("if(parent.tagName==='DETAILS')parent.open=true");
     const forbidden = await fetch(`${server.origin}/api/spec`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

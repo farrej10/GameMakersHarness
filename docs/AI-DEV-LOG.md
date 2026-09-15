@@ -41,10 +41,10 @@ The reference verifier passed contracts, protected-file checks, repository and s
 | G2 Live OpenRouter generation | Passed | `evidence/live-greenhouse/`, `evidence/live-moon/` |
 | G3 Controls and bounded recovery | Passed live and in tests | `evidence/live-storm/`, `tests/integration/orchestrator.test.ts` |
 | G4 Genuine autonomous repair evidence | Passed for toolkit implementation and live model repair | Implementation repair entry above; `evidence/AUTONOMOUS-REPAIR.md` |
-| G5 Three live examples, export, reproduction, public link | Partial | Three verified live examples, clean reproduction, repository, and public Pages URL pass; human full-level checks pending |
-| G6 Submission and video | Pending | `docs/DEMO.md` remains the recording/submission checklist |
+| G5 Playable examples, export, reproduction, public link | Partial | Four playable exports, three curated credentialed runs, clean reproduction, repository, and public Pages URL pass; human full-level checks pending |
+| G6 Submission and video | Pending | `docs/DEMO.md` contains the final timed recording script; recording and submission remain pending |
 
-Live model output and passing verification are recorded. Public deployment, human full-level completion, final video, and submission are not yet claimed.
+Live model output, passing verification, and public deployment are recorded. Human full-level completion, final video, and submission are not yet claimed.
 
 ## 2026-09-09 — Live OpenRouter calibration and recovery
 
@@ -62,16 +62,6 @@ Provenance: implementation plus credentialed, labeled fault-injection run.
 
 The game contract was expanded with standard, sprint, and dash movement; touch and ordered collection; chase, two patrol axes, and guard behavior; three objective modes; four layouts; two pressure systems; and an explicit fantasy, signature mechanic, pacing, and dramatic-pressure brief. The art role now makes four independent image requests and trusted code normalizes each result to a transparent 64 by 64 sprite. The control page displays this mechanic summary and polls actual logic, level, art, and repair states.
 
-The control page later became an iterative workbench. An optional durable review gate now separates parallel generation from integration, exposes the spec and all three worker contracts, previews every sprite, accepts validated source/JSON edits and PNG replacements, and records numbered revisions before continuing the autonomous harness. Timed requests gained a visible elapsed/countdown HUD, an automatic `survive` objective, and a semantic duration check that converts requested seconds to 60 Hz simulation ticks. This was prompted by a 30-second survival request that had been rendered as a hidden 10-second survive-then-exit condition.
-
-A live run then showed that initial worker failure occurs before the review gate, leaving its raw attempts visible only in the execution report. The workbench now exposes accepted outputs, raw model responses, and validation errors directly from each agent card in every run state. It can reopen prior runs and retry a stopped run as a linked run with the same approved inputs. Loading and model-backed actions now expose explicit spinner states.
-
-Agent diagnostics were subsequently collapsed by default to keep the workbench usable on runs with large outputs. Optional per-role guidance for logic, level, art, and repair is now persisted with each run, appended after the protected contract prompt, restored when reopening, and passed into linked retries. This lets a user steer the specific failed role while the harness continues to enforce the same schema and semantic checks.
-
-Linked iterations now calculate a targeted generation plan. Failed workers and workers whose instructions changed run again, while accepted outputs for unchanged workers are copied into the linked run and explicitly recorded as reused. Art guidance can be scoped to player, collectible, enemy, or exit; only the selected image requests run, and the other accepted or manually uploaded sprites remain byte-for-byte represented in the merged art contract. Global art guidance still regenerates the full set.
-
-Verified games remain iteration sources. Their agent instructions panel exposes the same targeted regeneration action, which creates a linked review run and leaves the passing build and evidence unchanged. Sprite adjustment controls expand every enclosing instruction section and focus the selected asset field so the action and input are visible together.
-
 The orchestrator now enforces `parallelWorkers` with a bounded scheduler and emits each completion event when that worker settles. In Storm run `20260911T202329Z-7ce1108f`, logic, level, and art began within 39 ms; logic finished in 2.916 s, level finished after one contract correction in 15.417 s, and art finished in 27.559 s. This establishes real overlap and shows art as the critical path.
 
 Development runs exposed two harness defects without a new human prompt. First, browser-failure classification matched an earlier passing `PLAY-01` line instead of the failed `PLAY-07`; the classifier was changed to prefer Playwright's failed-test marker and covered by an integration test. Second, restart assertions assumed the original four-key input shape even when expanded mechanics added optional action keys; the assertion now verifies mandatory directions and that every present input is released. The complete reference verifier then passed.
@@ -85,3 +75,50 @@ Provenance: implementation and reference fixture.
 The spec contract gained a bounded animation profile for dash, damage, and collection feedback. Current spec workers must select styles, colors, durations, and damage shake intensity that fit the game identity; the field stays optional at schema version 1 so preserved live runs remain readable. The art worker sees the selected profile as pose and contrast guidance, while the trusted Phaser renderer creates all effect objects.
 
 The renderer detects events only by comparing consecutive deterministic snapshots. Dash produces an afterimage, streak, or burst and stretches the player briefly; damage produces hurt flicker plus a flash or shockwave; collection produces a pop, spark, or pulse. Effects expire by simulation tick and restart destroys them. `window.gameDebug.visuals()` exposes animation state, invulnerability, and active effect records in development/test builds only. Browser checks ANIM-01 through ANIM-04 cover activation, expiration, and cleanup without adding simulation mutation commands. Final verification passed all eleven stages with 134 unit/integration tests and 16 browser scenarios; visual inspection confirmed readable dash afterimages and a visible damage shockwave.
+
+## 2026-09-13 — Interactive review and observable failures
+
+Provenance: implementation, commits `fd14744`, `5027eb7`, and `7e2d4eb`.
+
+Commit `fd14744` changed the local control page into an iterative workbench. Its optional durable review gate separates parallel generation from integration, exposes the specification and all three worker contracts, previews every sprite, accepts validated source or JSON edits and PNG replacements, and records numbered revisions before continuing the autonomous harness. The same change added a visible elapsed or countdown HUD, a `survive` objective, and a semantic duration check that converts requested seconds to 60 Hz simulation ticks. It followed a 30-second survival request that had been represented as a hidden 10-second survive-then-exit condition.
+
+A live run then showed that an initial worker failure happens before the review gate, leaving its raw attempt visible only in the execution report. Commit `5027eb7` exposed accepted outputs, raw model responses, and validation errors directly in collapsed agent cards for every run state. It also added prior-run reopening, linked retries, and loading indicators. Commit `7e2d4eb` added bounded, persisted guidance for logic, level, art, and repair so a human can redirect one role without replacing its protected contract prompt.
+
+## 2026-09-14 — Targeted iteration and recovery controls
+
+Provenance: implementation, commits `b6b47e1`, `098b08d`, `ab6dc48`, and `3000882`.
+
+Commit `b6b47e1` introduced explicit generation plans for linked iterations. Failed workers and workers whose instructions changed run again; accepted outputs for unchanged workers are copied into the new run and emit `worker.reused`. Art guidance can target player, collectible, enemy, or exit, causing only those image requests to run while the other accepted or manually uploaded sprites remain in the merged art contract. Global art guidance still regenerates all four sprites.
+
+Commit `098b08d` fixed the sprite controls so an “Adjust only” action expands the nested instructions and focuses the selected field. Commit `ab6dc48` made verified games valid iteration sources and placed the regeneration action beside the instructions; the linked run leaves the original passing build and evidence intact. Commit `3000882` corrected retry selection to use each role's latest terminal worker outcome, preventing a recovered art worker's earlier transient failure from forcing another full art generation.
+
+## 2026-09-14 — Portability and broader game objectives
+
+Provenance: implementation, commits `e08de4b` and `dd75313`.
+
+Commit `e08de4b` removed Windows-only `npm.cmd` assumptions from verification, Playwright server startup, CLI help, and documentation. The harness now selects `npm` or `npm.cmd` by platform and quotes generated build paths appropriately on Windows and POSIX shells. Stopped runs also gained an inline execution-report link and a clearer autonomous-repair retry action so failure evidence is reachable from the control page.
+
+Commit `dd75313` added a bounded `custom` objective whose approved formula may combine collection, exit contact, and elapsed time with AND or OR. The context packets and protected prompts describe the formula explicitly, the logic worker still returns only its fixed two-function module, and semantic validation remains authoritative. The renderer hides an exit for pure survival games and the timer derives its countdown from custom time requirements when present. Unit coverage was added for custom objective contracts, formulas, exit visibility, and timer behavior.
+
+## 2026-09-14 — Gallery and submission preparation
+
+Provenance: generated release artifact and documentation, commits `1b45be5` and `e0bd359`.
+
+Commit `1b45be5` published Rancher's Rush as the fourth playable gallery entry with its static build and four generated PNG assets. The public-site checker now validates every discovered game link instead of assuming exactly three entries. Commit `e0bd359` replaced the outline demo plan with a 396-word recording script aligned to the required format: working product in the first 90 seconds, then context boundaries, real parallel timings, deterministic verification, and the labeled autonomous repair loop in the final 90 seconds. This records preparation only; it does not claim that the video was recorded or submitted.
+
+## Commit-backed milestone index
+
+| Commits | Result |
+| --- | --- |
+| `2c8f7fa` | Initial specification, contracts, runtime, agents, harness, tests, and documentation |
+| `8e19f60`, `cf1f410` | Credentialed live generation, release checkpoint, and clean-checkout reproduction |
+| `784906c`, `ac2b50c`, `065ae0d`, `191133f` | GitHub Pages deployment, release routing, and public verification |
+| `91fcfef`, `d5787d1` | 64-pixel generated sprites and regenerated public examples |
+| `030f402` | Expanded identity and mechanic vocabulary |
+| `3feb80c` | Measured parallel work and live OpenRouter repair evidence |
+| `b7f9c8b` | Spec-directed dash, damage, and collection feedback |
+| `fd14744`, `5027eb7`, `7e2d4eb` | Review workbench, inline diagnostics, and per-agent guidance |
+| `b6b47e1`, `098b08d`, `ab6dc48`, `3000882` | Targeted role and sprite iteration with reuse of accepted work |
+| `e08de4b`, `dd75313` | Cross-platform verification and flexible custom objectives |
+| `1b45be5` | Fourth public gallery game, Rancher's Rush |
+| `e0bd359` | Final timed demo script |

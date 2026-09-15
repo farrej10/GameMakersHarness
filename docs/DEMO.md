@@ -1,53 +1,132 @@
-# Demo and submission plan
+# Three-minute demo script
 
-Use the attached organizer brief as the judging source. Its listed submission deadline is September 14, 2026; the actual submission URL was a placeholder in that attachment. Confirm final organizer instructions before submitting. Do not invent a link or claim submission happened.
+Target length: 2:50 to 2:58. The competition requires the first 90 seconds to show the product and the final 90 seconds to explain the agentic engineering system.
 
-## Three-minute video
+## Before recording
 
-| Time | Show | Explain |
-| --- | --- | --- |
-| 0:00-0:20 | Storm prompt, mechanic summary, and exact spec approval | A user describes a game and sees the distinct choices before approving it |
-| 0:20-0:45 | Live worker cards, then the report timeline | Logic, level, and art run concurrently and finish at their actual times |
-| 0:45-1:25 | Play Storm Courier: animated dash, collection burst, hit reaction, ordered shrines, guarding enemies, survival exit | The output has a specific identity, responsive feedback, and combined mechanics |
-| 1:25-1:45 | Greenhouse and Moon exports | The same constrained system produces materially different games |
-| 1:45-2:35 | Labeled fault, failed `PLAY-07`, model diff, passing attempt 1 | The harness routes an owned failure and repairs it without another prompt |
-| 2:35-3:00 | Protected checks, retry limit, human choices, reproduction | Autonomy has observable limits and the result can be reproduced |
+1. Start the control page with `npm.cmd run control` and open `http://127.0.0.1:4300`.
+2. Open the verified Storm Courier run `20260911T202329Z-7ce1108f` in the control page.
+3. Open the public gallery at <https://farrej10.github.io/GameMakersHarness/> in a second tab.
+4. Open `evidence/live-storm/report.html` and `docs/SYSTEM.md` in two more tabs.
+5. Set browser zoom so the game, worker timeline, and verification results are readable.
+6. Record the narration separately if that makes it easier to keep the timing precise.
+7. Label saved evidence `RECORDED LIVE RUN`. Label the repair sequence `INJECTED-FAULT DEMONSTRATION`. Never present either as activity occurring during the recording.
 
-Use clearly labeled time compression or recorded runs where generation exceeds the video duration. Do not display replayed events as if they are live model activity. Fixture screenshots and injected faults must be labeled.
+## Exact recording script
 
-### Exact recording sequence
+### 0:00–0:15 — Hook
 
-1. Start `npm run control` (`npm.cmd` in Windows PowerShell if needed) and open `http://127.0.0.1:4300`.
-2. Paste `examples/storm.txt`, create the spec, show the fantasy and mechanic chips plus exact JSON and hash, and approve it.
-3. Select “Demonstrate autonomous repair” and start generation. Time-compress the waiting period with a visible label while retaining the visible worker-state transitions.
-4. Open the verified build from the report and demonstrate the dash trail, collection burst, hit reaction, ordered collection, a guarding sentinel, survival pressure, and the exit objective.
-5. Open the Greenhouse and Moon builds briefly to show different movement, collection, enemy behavior, objective, layout, and art.
-6. Show Storm’s report timeline, `injected-fault` label, failed `PLAY-07`, before/after diff, OpenRouter repair metadata, passing attempt 1, and the three-repair cap test.
-7. End on `npm run verify` (`npm.cmd` in Windows PowerShell if needed), the public playable URL, and the repository URL.
+**Show:** Storm Courier already running. Dash past an enemy and collect a shrine.
 
-Three credentialed runs now exist under `evidence/live-greenhouse/`, `evidence/live-moon/`, and `evidence/live-storm/`; their reports and screenshots may be shown as live evidence. Storm’s injected defect must retain the visible `injected-fault` label. Screenshots under `evidence/screenshots/` remain reference fixtures and require a persistent `REFERENCE FIXTURE` label.
+**Say:**
 
-If the optional UI is absent, use the CLI for prompt/approval and the static HTML report for orchestration/repair evidence. Do not sacrifice the working harness to build a dashboard for the video.
+> This is Agentic Game Maker. Give it a short game idea and it coordinates specialized agents to produce a playable browser game, test the actual gameplay, and repair failures without waiting for another human prompt.
 
-## Required submission checklist
+### 0:15–0:35 — From description to approved design
 
-- [x] Clear project name.
-- [x] One-to-two sentence product description.
-- [x] Public accessible playable browser example: <https://farrej10.github.io/GameMakersHarness/>.
-- [x] GitHub repository containing implementation and lockfile: <https://github.com/farrej10/GameMakersHarness>.
-- [x] `docs/SPEC.md` updated to reflect final shipped behavior.
-- [x] `docs/SYSTEM.md` with actual context boundaries and parallelization evidence.
-- [x] Actual harness scripts and tests, with reproduction commands.
-- [x] A complete live model repair loop with inspectable, labeled provenance.
-- [x] `docs/AI-DEV-LOG.md` with failures, corrections, and human decisions.
-- [x] README with exact tested setup, env variables, API/backend requirements, and exported-play instructions.
-- [ ] Shareable video of at most three minutes.
-- [x] Current offline evidence links resolve and contains no credentials.
-- [x] Three credentialed live games and their static exports pass the complete harness.
-- [x] Clean-checkout lockfile install and verification reproduced.
+**Show:** Control page with the Storm prompt, design summary, and exact specification. Briefly point to dash movement, ordered collection, survival objective, and guard enemies.
 
-## Submission description draft
+**Say:**
 
-Agentic Game Maker turns a short supported description into a playable browser survival game using specialized OpenRouter workers. Its harness tests gameplay, routes failures back to the responsible worker, and records bounded autonomous repairs in an inspectable execution report.
+> I asked for a storm courier dashing between numbered lightning shrines while sentinels guard the routes. The specification agent turned that into bounded mechanics and a distinct identity. I can edit the result, but generation starts only after I approve this exact specification.
 
-This description matches the implemented and credentialed toolkit. Submission still requires human full-level playthroughs and the recorded video.
+### 0:35–1:05 — Play the result
+
+**Show:** Gameplay. Demonstrate movement, dash animation, ordered collection, a damage reaction, the visible survival timer, and the exit. A short montage is fine.
+
+**Say:**
+
+> The result has keyboard movement, a cooldown dash, ordered objectives, guarding enemies, health, scoring, a survival timer, and win and loss states. The runtime also adds dash trails, collection bursts, and hit feedback selected from the game’s visual profile. This is a static browser build; players never need my API key.
+
+### 1:05–1:20 — Breadth inside a controlled scope
+
+**Show:** Public gallery. Switch briefly between Greenhouse Rescue, Moon Base Rescue, and Storm Courier.
+
+**Say:**
+
+> The toolkit stays inside a reliable top-down action collection family, but these games vary movement, enemy behavior, objectives, level layout, pressure, palette, and generated art. That controlled scope makes the output both varied and testable.
+
+### 1:20–1:30 — Human-directed iteration
+
+**Show:** Click **Adjust only enemy** on the verified Storm run. Enter a short instruction, but do not submit it during the recording. Point to **Regenerate agents with changed instructions**.
+
+**Say:**
+
+> I can still direct a verified result. Changing only the enemy art reruns one image request, reuses every unchanged output, and preserves the original verified build as evidence.
+
+### 1:30–1:48 — System design and context boundaries
+
+**Show:** The system diagram at the top of `docs/SYSTEM.md`.
+
+**Say:**
+
+> Behind the interface is a deterministic orchestrator. The spec agent defines intent. Logic receives mechanics, level receives placement constraints, and art receives the visual contract. Outputs must pass strict schemas before trusted code integrates them.
+
+### 1:48–2:05 — Real parallel coordination
+
+**Show:** Storm report worker timeline. Highlight overlapping logic, level, and art intervals.
+
+**Say:**
+
+> Logic, level, and art are independent, so the orchestrator starts them concurrently. In this recorded run, all three began within thirty-nine milliseconds. Logic completed in 2.9 seconds, level in 15.4, and art in 27.6. These are persisted timestamps.
+
+### 2:05–2:38 — Autonomous failure and recovery
+
+**Show:** The `injected-fault` label, failed attempt 0 with `PLAY-07`, repair ownership, before-and-after diff, and passed attempt 1. Keep `INJECTED-FAULT DEMONSTRATION` visible.
+
+**Say:**
+
+> Here is the autonomous loop. Demonstration mode preserved the generated logic and injected a labeled, exit-unaware victory rule. The browser harness failed PLAY-07. The orchestrator routed it to logic, sent the current artifact and exact failure to the repair model, validated the replacement, reintegrated it, and ran the complete harness again. Attempt one passed. No human prompt occurred during recovery, and the loop stops after three attempts.
+
+### 2:38–2:52 — Deterministic back pressure
+
+**Show:** Verification results with contracts, types, unit suite, builds, assets, browser suite, production smoke, and protected checks passing.
+
+**Say:**
+
+> Models provide judgment; deterministic controls provide guarantees. One command checks contracts, types, tests, builds, assets, browser gameplay, production loading, and protected files. A model cannot edit the harness that judges it.
+
+### 2:52–3:00 — Close
+
+**Show:** Public URL and GitHub repository side by side.
+
+**Say:**
+
+> Agentic Game Maker turns one human decision into coordinated, verified work. The games, code, event logs, repair evidence, and reproduction steps are public.
+
+## Optional cuts if the recording runs long
+
+Cut these in order:
+
+1. From 1:05, remove the list after “these games vary.”
+2. From 1:30, remove “Their JSON and TypeScript outputs are schema validated.”
+3. From 2:38, shorten the checks to “contracts, builds, gameplay, assets, and protected files.”
+
+Do not cut the parallel timing, failed `PLAY-07`, owner routing, passing second attempt, or absence of a human prompt. Those directly address the two largest judging categories.
+
+## On-screen labels
+
+- `RECORDED LIVE OPENROUTER RUN`
+- `INJECTED-FAULT DEMONSTRATION`
+- `ATTEMPT 0: FAILED PLAY-07`
+- `LOGIC OWNER → MODEL REPAIR → FULL RE-VERIFY`
+- `ATTEMPT 1: 11/11 STAGES PASSED`
+- `NO HUMAN PROMPT DURING RECOVERY`
+
+## Submission links
+
+- Product: <https://farrej10.github.io/GameMakersHarness/>
+- Repository: <https://github.com/farrej10/GameMakersHarness>
+- System map: `docs/SYSTEM.md`
+- Autonomous repair map: `evidence/AUTONOMOUS-REPAIR.md`
+- Live-run comparison: `evidence/LIVE-RUNS.md`
+
+## Final recording checks
+
+- The final export is no longer than three minutes.
+- Text remains readable at normal playback size.
+- No `.env`, API key, request authorization header, or unrelated browser tab appears.
+- The first 90 seconds show the working product.
+- The final 90 seconds show context boundaries, parallel orchestration, verification, and autonomous recovery.
+- Recorded and injected evidence remains visibly labeled.
+- Audio is clear and the final URLs remain visible long enough to read.
